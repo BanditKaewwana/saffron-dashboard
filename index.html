@@ -1,0 +1,1356 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Saffron On The Sea — Marketing Dashboard</title>
+<style>
+  :root {
+    --saffron: #C8860A;
+    --saffron-pale: #FDF3DC;
+    --saffron-deep: #8B5E00;
+    --sea: #1A4A6B;
+    --sea-light: #E8F2F8;
+    --cream: #FAF7F2;
+    --text: #2C2C2C;
+    --muted: #7A7A7A;
+    --border: #E8E0D0;
+    --success: #2D8A4E;
+    --success-bg: #EAF7EE;
+    --warning: #B06000;
+    --warning-bg: #FFF3E0;
+    --danger: #C0392B;
+    --danger-bg: #FDEDEC;
+    --shadow: 0 2px 12px rgba(0,0,0,0.08);
+    --shadow-lg: 0 8px 32px rgba(0,0,0,0.12);
+    --radius: 12px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', -apple-system, sans-serif; background: var(--cream); color: var(--text); font-size: 14px; }
+
+  /* LOGIN */
+  #loginScreen { min-height:100vh; display:flex; align-items:center; justify-content:center; background:linear-gradient(135deg,#1A1A2E,#0F3460); padding:20px; }
+  .login-card { background:white; border-radius:20px; padding:48px 40px; width:100%; max-width:400px; text-align:center; box-shadow:0 20px 60px rgba(0,0,0,0.3); }
+  .login-logo { font-size:26px; font-weight:300; letter-spacing:3px; color:var(--saffron); text-transform:uppercase; margin-bottom:4px; }
+  .login-sub { font-size:11px; color:var(--muted); letter-spacing:2px; text-transform:uppercase; margin-bottom:36px; }
+  .login-label { font-size:13px; color:var(--muted); margin-bottom:16px; display:block; }
+  .role-btns { display:flex; flex-direction:column; gap:12px; }
+  .role-btn { padding:16px 24px; border:2px solid var(--border); border-radius:var(--radius); background:white; cursor:pointer; transition:all 0.2s; text-align:left; display:flex; align-items:center; gap:14px; font-family:inherit; }
+  .role-btn:hover { border-color:var(--saffron); background:var(--saffron-pale); }
+  .role-icon { font-size:24px; }
+  .role-name { font-size:15px; font-weight:600; color:var(--text); display:block; }
+  .role-desc { font-size:12px; color:var(--muted); display:block; margin-top:2px; }
+
+  /* APP */
+  #app { display:none; }
+  header { background:white; border-bottom:1px solid var(--border); padding:0 28px; height:60px; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:100; box-shadow:0 1px 8px rgba(0,0,0,0.06); }
+  .header-brand { display:flex; align-items:center; gap:10px; }
+  .header-logo { font-size:16px; font-weight:600; color:var(--saffron); letter-spacing:1px; }
+  .hdiv { width:1px; height:20px; background:var(--border); }
+  .header-title { font-size:13px; color:var(--muted); letter-spacing:1px; text-transform:uppercase; }
+  .header-right { display:flex; align-items:center; gap:12px; }
+  .role-badge { background:var(--saffron-pale); color:var(--saffron-deep); padding:4px 12px; border-radius:20px; font-size:12px; font-weight:600; }
+  .btn-logout { background:none; border:1px solid var(--border); padding:6px 14px; border-radius:6px; font-size:12px; color:var(--muted); cursor:pointer; transition:all 0.2s; font-family:inherit; }
+  .btn-logout:hover { border-color:var(--danger); color:var(--danger); }
+
+  /* NAV */
+  .nav-tabs { background:white; border-bottom:1px solid var(--border); padding:0 28px; display:flex; }
+  .nav-tab { padding:14px 22px; border:none; background:none; font-size:13px; font-weight:500; cursor:pointer; color:var(--muted); border-bottom:2px solid transparent; margin-bottom:-1px; transition:all 0.2s; font-family:inherit; display:flex; align-items:center; gap:6px; }
+  .nav-tab:hover { color:var(--saffron); }
+  .nav-tab.active { color:var(--saffron); border-bottom-color:var(--saffron); font-weight:600; }
+  .nbadge { background:var(--danger); color:white; font-size:10px; padding:1px 6px; border-radius:10px; font-weight:700; }
+
+  main { max-width:1200px; margin:0 auto; padding:28px 24px; }
+  .page { display:none; }
+  .page.active { display:block; }
+
+  /* BUTTONS */
+  .btn-primary { background:var(--saffron); color:white; border:none; padding:10px 20px; border-radius:8px; font-size:13px; font-weight:600; cursor:pointer; transition:all 0.2s; font-family:inherit; white-space:nowrap; }
+  .btn-primary:hover { background:var(--saffron-deep); }
+  .btn-secondary { background:white; color:var(--text); border:1px solid var(--border); padding:10px 20px; border-radius:8px; font-size:13px; cursor:pointer; transition:all 0.2s; font-family:inherit; white-space:nowrap; }
+  .btn-secondary:hover { border-color:var(--saffron); color:var(--saffron); }
+  .btn-sm { padding:6px 12px !important; font-size:12px !important; border-radius:6px !important; }
+  .btn-approve { background:var(--success-bg); color:var(--success); border:1px solid var(--success); padding:6px 14px; border-radius:6px; font-size:12px; font-weight:600; cursor:pointer; transition:all 0.2s; font-family:inherit; }
+  .btn-approve:hover { background:var(--success); color:white; }
+  .btn-reject { background:var(--danger-bg); color:var(--danger); border:1px solid var(--danger); padding:6px 14px; border-radius:6px; font-size:12px; font-weight:600; cursor:pointer; transition:all 0.2s; font-family:inherit; }
+  .btn-reject:hover { background:var(--danger); color:white; }
+  .btn-golive { background:var(--sea-light); color:var(--sea); border:1px solid var(--sea); padding:6px 14px; border-radius:6px; font-size:12px; font-weight:600; cursor:pointer; transition:all 0.2s; font-family:inherit; }
+  .btn-golive:hover { background:var(--sea); color:white; }
+  .btn-danger { background:none; color:var(--danger); border:1px solid transparent; padding:6px 12px; border-radius:6px; font-size:12px; cursor:pointer; transition:all 0.2s; font-family:inherit; }
+  .btn-danger:hover { border-color:var(--danger); background:var(--danger-bg); }
+  .btn-icon { background:none; border:1px solid var(--border); padding:6px 10px; border-radius:6px; cursor:pointer; font-size:14px; transition:all 0.2s; color:var(--muted); font-family:inherit; }
+  .btn-icon:hover { border-color:var(--saffron); color:var(--saffron); }
+
+  /* SUMMARY */
+  .summary-grid { display:grid; grid-template-columns:repeat(5,1fr); gap:14px; margin-bottom:28px; }
+  .stat-card { background:white; border-radius:var(--radius); padding:18px 20px; border:1px solid var(--border); cursor:pointer; transition:all 0.2s; position:relative; overflow:hidden; }
+  .stat-card:hover { box-shadow:var(--shadow); transform:translateY(-1px); }
+  .stat-card.active { border-color:var(--saffron); }
+  .stat-card::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; background:var(--saffron); opacity:0; transition:opacity 0.2s; }
+  .stat-card.active::before { opacity:1; }
+  .stat-num { font-size:28px; font-weight:700; line-height:1; margin-bottom:4px; }
+  .stat-label { font-size:11px; text-transform:uppercase; letter-spacing:0.8px; color:var(--muted); }
+  .s-all .stat-num { color:var(--text); }
+  .s-pending .stat-num { color:var(--warning); }
+  .s-approved .stat-num { color:var(--success); }
+  .s-live .stat-num { color:var(--sea); }
+  .s-draft .stat-num { color:#888; }
+
+  /* TOOLBAR */
+  .section-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; }
+  .section-title { font-size:20px; font-weight:600; }
+  .toolbar { display:flex; align-items:center; gap:10px; margin-bottom:16px; flex-wrap:wrap; }
+  .filter-group { display:flex; gap:6px; flex:1; flex-wrap:wrap; }
+  .fchip { padding:6px 14px; border-radius:20px; border:1px solid var(--border); background:white; font-size:12px; cursor:pointer; color:var(--muted); transition:all 0.2s; font-family:inherit; white-space:nowrap; }
+  .fchip:hover { border-color:var(--saffron); color:var(--saffron); }
+  .fchip.active { background:var(--saffron); border-color:var(--saffron); color:white; }
+  .search-box { padding:8px 14px; border:1px solid var(--border); border-radius:8px; font-size:13px; width:200px; outline:none; transition:border-color 0.2s; font-family:inherit; }
+  .search-box:focus { border-color:var(--saffron); }
+
+  /* CAMPAIGN LIST */
+  .campaigns-container { background:white; border-radius:var(--radius); border:1px solid var(--border); overflow:hidden; }
+  .empty-state { text-align:center; padding:60px 20px; color:var(--muted); }
+  .empty-icon { font-size:48px; margin-bottom:12px; }
+  .campaign-item { border-bottom:1px solid var(--border); padding:18px 22px; transition:background 0.15s; cursor:pointer; }
+  .campaign-item:last-child { border-bottom:none; }
+  .campaign-item:hover { background:var(--cream); }
+  .crow { display:grid; grid-template-columns:1fr 130px 170px 120px auto; align-items:center; gap:16px; }
+  .c-name { font-size:14px; font-weight:600; margin-bottom:3px; display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+  .c-meta { font-size:12px; color:var(--muted); margin-top:2px; }
+  .type-badge { font-size:10px; padding:2px 8px; border-radius:4px; font-weight:600; letter-spacing:0.5px; text-transform:uppercase; flex-shrink:0; }
+  .t-room { background:#E8F0FF; color:#2C5CC5; }
+  .t-fb { background:#FFF0E0; color:#C05A00; }
+  .t-package { background:#F0E8FF; color:#6C2CC5; }
+  .sbadge { display:inline-flex; align-items:center; gap:5px; font-size:11px; font-weight:600; padding:4px 10px; border-radius:20px; text-transform:uppercase; letter-spacing:0.5px; white-space:nowrap; }
+  .sbadge::before { content:''; width:6px; height:6px; border-radius:50%; background:currentColor; flex-shrink:0; }
+  .s-draft2 { background:#f0f0f0; color:#666; }
+  .s-pending2 { background:var(--warning-bg); color:var(--warning); }
+  .s-approved2 { background:var(--success-bg); color:var(--success); }
+  .s-live2 { background:var(--sea-light); color:var(--sea); }
+  .s-expired2 { background:#f0f0f0; color:#999; }
+  .s-rejected2 { background:var(--danger-bg); color:var(--danger); }
+  .c-actions { display:flex; gap:6px; align-items:center; flex-shrink:0; }
+  .col-label { font-size:11px; text-transform:uppercase; letter-spacing:0.8px; color:var(--muted); font-weight:600; }
+  .table-header { background:var(--cream); border-bottom:1px solid var(--border); padding:10px 22px; }
+
+  /* MODAL */
+  .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:200; display:flex; align-items:flex-start; justify-content:center; padding:30px 20px; overflow-y:auto; }
+  .modal { background:white; border-radius:16px; width:100%; max-width:680px; box-shadow:var(--shadow-lg); }
+  .modal-header { padding:22px 28px 18px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
+  .modal-title { font-size:18px; font-weight:700; }
+  .modal-close { background:none; border:none; font-size:22px; color:var(--muted); cursor:pointer; width:32px; height:32px; display:flex; align-items:center; justify-content:center; border-radius:6px; }
+  .modal-close:hover { background:var(--cream); }
+  .modal-body { padding:22px 28px; max-height:70vh; overflow-y:auto; }
+  .modal-footer { padding:14px 28px 22px; display:flex; gap:10px; justify-content:flex-end; border-top:1px solid var(--border); }
+
+  /* FORM */
+  .form-tabs { display:flex; border-bottom:1px solid var(--border); margin-bottom:20px; }
+  .ftab-btn { padding:10px 20px; border:none; background:none; font-size:13px; cursor:pointer; color:var(--muted); border-bottom:2px solid transparent; margin-bottom:-1px; transition:all 0.2s; font-family:inherit; }
+  .ftab-btn:hover { color:var(--saffron); }
+  .ftab-btn.active { color:var(--saffron); border-bottom-color:var(--saffron); font-weight:600; }
+  .fsection { margin-bottom:22px; }
+  .fsection-title { font-size:11px; font-weight:700; color:var(--saffron-deep); text-transform:uppercase; letter-spacing:1px; margin-bottom:14px; padding-bottom:8px; border-bottom:1px solid var(--saffron-pale); }
+  .fgrid { display:grid; gap:14px; }
+  .fgrid-2 { grid-template-columns:1fr 1fr; }
+  .fgrid-3 { grid-template-columns:1fr 1fr 1fr; }
+  .fgroup { display:flex; flex-direction:column; gap:6px; }
+  label { font-size:12px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:0.5px; }
+  input[type="text"], input[type="number"], input[type="date"], textarea, select {
+    padding:10px 12px; border:1px solid var(--border); border-radius:8px; font-size:14px; font-family:inherit; color:var(--text); background:white; outline:none; transition:border-color 0.2s; width:100%;
+  }
+  input:focus, textarea:focus, select:focus { border-color:var(--saffron); box-shadow:0 0 0 3px rgba(200,134,10,0.1); }
+  textarea { resize:vertical; min-height:80px; }
+  .req { color:var(--danger); }
+  .chip-group { display:flex; flex-wrap:wrap; gap:8px; margin-top:4px; }
+  .cchip { display:flex; align-items:center; gap:6px; padding:6px 12px; border:1px solid var(--border); border-radius:6px; cursor:pointer; font-size:12px; transition:all 0.2s; user-select:none; font-family:inherit; }
+  .cchip input { display:none; }
+  .cchip.checked { border-color:var(--saffron); background:var(--saffron-pale); color:var(--saffron-deep); font-weight:600; }
+
+  /* ROOM GRID (campaign form) */
+  .rg-group-label { font-size:10px;font-weight:700;color:var(--saffron-deep);text-transform:uppercase;letter-spacing:1px;margin:12px 0 6px;padding-left:2px; }
+  .rg-room { border:1.5px solid #e8e0d0;border-radius:10px;margin-bottom:7px;overflow:hidden;transition:border-color 0.2s; }
+  .rg-room.rg-active { border-color:var(--saffron); }
+  .rg-room-header { display:flex;align-items:center;justify-content:space-between;padding:10px 14px;gap:8px; }
+  .rg-active .rg-room-header { background:var(--saffron-pale); }
+  .rg-cblabel { display:flex;align-items:center;gap:8px;cursor:pointer;flex:1;min-width:0; }
+  .rg-cblabel input[type=checkbox] { width:16px;height:16px;accent-color:var(--saffron);flex-shrink:0; }
+  .rg-rid { font-size:11px;font-weight:800;color:var(--sea);background:#e8f0f7;padding:2px 7px;border-radius:5px;flex-shrink:0; }
+  .rg-rname { font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+  .rg-tags { display:flex;gap:4px;flex-wrap:wrap;flex-shrink:0; }
+  .rg-prices { padding:12px 14px 14px;border-top:1px solid #e8e0d0;display:none;background:#fafaf7; }
+  .rg-active .rg-prices { display:block;border-top-color:rgba(200,134,10,0.2); }
+
+  /* mode toggle */
+  .rg-mode-row { display:flex;align-items:center;gap:8px;margin-bottom:12px; }
+  .rg-mode-label { font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;white-space:nowrap; }
+  .rg-mode-opts { display:flex;background:#eee;border-radius:8px;padding:3px;gap:2px; }
+  .rg-mode-opt { display:flex;align-items:center;gap:5px;padding:5px 12px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;color:var(--muted);transition:all 0.18s;user-select:none;font-family:inherit;border:none;background:none; }
+  .rg-mode-opt.active { background:white;color:var(--saffron-deep);box-shadow:0 1px 4px rgba(0,0,0,0.12); }
+
+  /* price inputs row */
+  .rg-price-row { display:grid;grid-template-columns:1fr 1fr auto;align-items:end;gap:10px; }
+  .rg-field { display:flex;flex-direction:column;gap:5px; }
+  .rg-field-label { font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px; }
+  .rg-sinput-wrap { position:relative; }
+  .rg-sinput-wrap .rg-unit { position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:11px;color:var(--muted);pointer-events:none;font-weight:600; }
+  .rg-pinput { padding:9px 38px 9px 12px;border:1.5px solid #ddd;border-radius:8px;font-size:14px;width:100%;font-family:inherit;transition:border-color 0.2s;background:white; }
+  .rg-pinput:focus { border-color:var(--saffron);outline:none;box-shadow:0 0 0 2px rgba(200,134,10,0.1); }
+
+  /* result badge */
+  .rg-result-badge { display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:88px;height:52px;border-radius:10px;background:#f0f0f0;transition:all 0.2s; }
+  .rg-result-badge.has-val { background:var(--success-bg); }
+  .rg-result-badge .rb-main { font-size:18px;font-weight:800;color:var(--muted);line-height:1; }
+  .rg-result-badge.has-val .rb-main { color:var(--success); }
+  .rg-result-badge .rb-sub { font-size:10px;color:var(--muted);margin-top:3px; }
+  .rg-result-badge.has-val .rb-sub { color:var(--success); }
+  .rg-note { font-size:11px;color:var(--muted);padding:8px 2px 0;border-top:1px dashed #e4ddd2;margin-top:10px; }
+
+  /* DETAIL */
+  .detail-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:20px; }
+  .di .dl { font-size:11px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px; }
+  .di .dv { font-size:14px; }
+  .di.full { grid-column:1/-1; }
+  .approval-box { background:var(--warning-bg); border:1px solid #F5C842; border-radius:8px; padding:16px; margin-top:16px; }
+  .history-log { margin-top:16px; border-top:1px solid var(--border); padding-top:14px; }
+  .h-title { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.8px; color:var(--muted); margin-bottom:10px; }
+  .h-item { display:flex; gap:10px; margin-bottom:8px; font-size:12px; color:var(--muted); }
+  .h-dot { width:8px; height:8px; border-radius:50%; background:var(--saffron); margin-top:4px; flex-shrink:0; }
+  .h-action { font-weight:600; color:var(--text); }
+
+  /* ===== PRICING PAGE ===== */
+  .pricing-intro { background:white; border:1px solid var(--border); border-radius:var(--radius); padding:18px 22px; margin-bottom:20px; display:flex; gap:14px; align-items:flex-start; }
+  .pricing-intro p { font-size:13px; color:var(--muted); line-height:1.6; }
+
+  .global-discount-bar { background:var(--saffron-pale); border:1px solid #F5C842; border-radius:10px; padding:16px 22px; margin-bottom:24px; display:flex; align-items:center; gap:16px; flex-wrap:wrap; }
+  .gd-label { font-size:13px; font-weight:700; color:var(--saffron-deep); white-space:nowrap; }
+  .gd-input-wrap { display:flex; align-items:center; gap:6px; }
+  .gd-input { width:72px; padding:8px 10px; border:2px solid var(--saffron); border-radius:8px; font-size:18px; font-weight:700; color:var(--saffron-deep); text-align:center; outline:none; background:white; font-family:inherit; }
+  .gd-presets { display:flex; gap:6px; flex-wrap:wrap; }
+  .gd-preset { padding:6px 14px; border-radius:20px; border:1px solid var(--saffron); color:var(--saffron-deep); font-size:12px; cursor:pointer; background:white; transition:all 0.2s; font-family:inherit; font-weight:600; }
+  .gd-preset:hover { background:var(--saffron); color:white; border-color:var(--saffron); }
+  .gd-preset.on { background:var(--saffron); color:white; }
+
+  .pricing-table-wrap { background:white; border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; margin-bottom:20px; }
+  .pt-header { background:var(--cream); padding:12px 20px; font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:1px; color:var(--saffron-deep); border-bottom:1px solid var(--border); }
+
+  table.pt { width:100%; border-collapse:collapse; }
+  table.pt th { background:var(--cream); padding:10px 14px; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.7px; color:var(--muted); text-align:left; border-bottom:1px solid var(--border); white-space:nowrap; }
+  table.pt td { padding:14px 14px; border-bottom:1px solid var(--border); vertical-align:middle; }
+  table.pt tr:last-child td { border-bottom:none; }
+  table.pt tr:hover td { background:var(--cream); }
+
+  .room-id { font-size:20px; font-weight:800; color:var(--saffron); line-height:1; display:block; }
+  .room-name-sm { font-size:12px; font-weight:600; color:var(--text); display:block; margin-top:2px; }
+  .room-note-sm { font-size:11px; color:var(--muted); display:block; margin-top:2px; line-height:1.4; }
+
+  .p-orig { font-size:13px; color:var(--text); font-weight:500; }
+  .p-range { font-size:11px; color:var(--muted); display:block; margin-top:1px; }
+  .p-na { color:#ccc; }
+
+  .p-after { font-size:15px; font-weight:700; }
+  .p-after.low { color:var(--success); }
+  .p-after.high { color:var(--warning); }
+  .p-save { display:inline-block; background:var(--success-bg); color:var(--success); font-size:10px; font-weight:700; padding:2px 7px; border-radius:4px; margin-top:3px; }
+
+  .disc-input { width:60px; padding:6px 8px; border:1px solid var(--border); border-radius:6px; font-size:13px; font-weight:600; text-align:center; outline:none; font-family:inherit; color:var(--saffron-deep); background:white; }
+  .disc-input:focus { border-color:var(--saffron); }
+  .disc-input::placeholder { color:#ccc; font-weight:400; }
+
+  .rtag { font-size:10px; padding:2px 6px; border-radius:4px; font-weight:600; display:inline-block; margin-top:3px; }
+  .rt-pop { background:#FFF0F0; color:#C0392B; }
+  .rt-best { background:#E8F5FF; color:#0066AA; }
+  .rt-wi { background:#F0F0F0; color:#555; }
+  .rt-xb { background:#E8F0FF; color:#2C5CC5; }
+
+  /* TOAST */
+  .toast { position:fixed; bottom:28px; right:28px; background:var(--text); color:white; padding:12px 20px; border-radius:10px; font-size:13px; z-index:999; opacity:0; transform:translateY(10px); transition:all 0.3s; pointer-events:none; }
+  .toast.show { opacity:1; transform:translateY(0); }
+  .toast.success { background:var(--success); }
+  .toast.error { background:var(--danger); }
+
+  @media print {
+    header, .nav-tabs, .toolbar, .c-actions, .summary-grid, #loginScreen, .global-discount-bar { display:none !important; }
+    body { background:white; }
+    main { padding:0; max-width:100%; }
+  }
+  @media (max-width:900px) {
+    .summary-grid { grid-template-columns:repeat(3,1fr); }
+    .crow { grid-template-columns:1fr auto auto; }
+    .crow > :nth-child(2), .crow > :nth-child(3) { display:none; }
+    .fgrid-2, .fgrid-3 { grid-template-columns:1fr; }
+    .detail-grid { grid-template-columns:1fr; }
+  }
+  @media (max-width:600px) {
+    .summary-grid { grid-template-columns:repeat(2,1fr); }
+    main { padding:16px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="loginScreen">
+  <div class="login-card">
+    <div class="login-logo">Saffron On The Sea</div>
+    <div class="login-sub">Marketing Dashboard</div>
+    <span class="login-label">เลือกบทบาทของคุณ</span>
+    <div class="role-btns">
+      <button class="role-btn" onclick="login('manager')">
+        <span class="role-icon">📋</span>
+        <span><span class="role-name">ผู้จัดการ (Manager)</span><span class="role-desc">สร้างและแก้ไขแคมเปญ · ส่งขออนุมัติ</span></span>
+      </button>
+      <button class="role-btn" onclick="login('owner')">
+        <span class="role-icon">👑</span>
+        <span><span class="role-name">เจ้าของ (Owner)</span><span class="role-desc">Approve · ดูภาพรวม · สร้างแคมเปญ</span></span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <header>
+    <div class="header-brand">
+      <span class="header-logo">🌊 SAFFRON</span>
+      <div class="hdiv"></div>
+      <span class="header-title">Marketing Dashboard</span>
+    </div>
+    <div class="header-right">
+      <span class="role-badge" id="roleBadge"></span>
+      <button class="btn-icon" id="syncBtn" onclick="openSyncModal()" title="Cloud Sync" style="font-size:18px;padding:4px 8px;background:none;border:none;cursor:pointer;opacity:0.6;transition:opacity 0.2s" onmouseenter="this.style.opacity=1" onmouseleave="this.style.opacity=0.6">☁️</button>
+      <button class="btn-logout" onclick="logout()">ออกจากระบบ</button>
+    </div>
+  </header>
+
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="showPage('campaigns',this)">📋 แคมเปญ <span class="nbadge" id="pendingBadge" style="display:none"></span></button>
+    <button class="nav-tab" onclick="showPage('pricing',this)">💰 ราคาห้องพัก</button>
+  </div>
+
+  <main>
+    <!-- CAMPAIGNS PAGE -->
+    <div class="page active" id="page-campaigns">
+      <div class="summary-grid" id="summaryGrid"></div>
+      <div class="section-header">
+        <h2 class="section-title">แคมเปญทั้งหมด</h2>
+        <button class="btn-primary" onclick="openCreateModal()">+ สร้างแคมเปญใหม่</button>
+      </div>
+      <div class="toolbar">
+        <div class="filter-group">
+          <button class="fchip active" onclick="setFilter('all',this)">ทั้งหมด</button>
+          <button class="fchip" onclick="setFilter('draft',this)">Draft</button>
+          <button class="fchip" onclick="setFilter('pending',this)">รออนุมัติ</button>
+          <button class="fchip" onclick="setFilter('approved',this)">อนุมัติแล้ว</button>
+          <button class="fchip" onclick="setFilter('live',this)">Live</button>
+          <button class="fchip" onclick="setFilter('expired',this)">หมดอายุ</button>
+          <button class="fchip" onclick="setFilter('room',this)">🏠 ห้องพัก</button>
+          <button class="fchip" onclick="setFilter('fb',this)">🍽️ ร้านอาหาร</button>
+        </div>
+        <input class="search-box" type="text" placeholder="🔍 ค้นหา..." oninput="setSearch(this.value)">
+        <button class="btn-icon" onclick="window.print()">🖨️</button>
+      </div>
+      <div class="campaigns-container">
+        <div class="table-header">
+          <div class="crow">
+            <span class="col-label">ชื่อแคมเปญ</span>
+            <span class="col-label">ประเภท</span>
+            <span class="col-label">ช่วงเวลา</span>
+            <span class="col-label">สถานะ</span>
+            <span></span>
+          </div>
+        </div>
+        <div id="campaignList"></div>
+      </div>
+    </div>
+
+    <!-- PRICING PAGE -->
+    <div class="page" id="page-pricing">
+      <div class="section-header">
+        <h2 class="section-title">ราคาห้องพัก & เครื่องคำนวณส่วนลด</h2>
+        <button class="btn-icon" onclick="window.print()">🖨️ พิมพ์</button>
+      </div>
+
+      <div class="pricing-intro">
+        <span style="font-size:28px">💡</span>
+        <p>ใส่ % ส่วนลดในช่องสีทอง แล้วระบบจะคำนวณราคาหลังลดให้ทุกห้องอัตโนมัติ · ตั้งส่วนลดแยกรายห้องได้ที่คอลัมน์ "ส่วนลด %" · ราคาที่แสดงเป็น Rack Rate อ้างอิง ราคา Official อยู่ใน Little Hotelier</p>
+      </div>
+
+      <div class="global-discount-bar">
+        <span class="gd-label">ส่วนลดทุกห้อง</span>
+        <div class="gd-input-wrap">
+          <input class="gd-input" type="number" id="globalDiscount" value="0" min="0" max="90" oninput="applyGlobal()">
+          <span style="font-size:20px;font-weight:700;color:var(--saffron-deep)">%</span>
+        </div>
+        <div class="gd-presets">
+          <button class="gd-preset" onclick="setGlobal(10)">−10%</button>
+          <button class="gd-preset" onclick="setGlobal(15)">−15%</button>
+          <button class="gd-preset" onclick="setGlobal(20)">−20%</button>
+          <button class="gd-preset" onclick="setGlobal(25)">−25%</button>
+          <button class="gd-preset" onclick="setGlobal(30)">−30%</button>
+          <button class="gd-preset" onclick="setGlobal(0)">รีเซ็ต</button>
+        </div>
+        <span style="font-size:12px;color:var(--muted)">หรือตั้งส่วนลดแยกรายห้องในตาราง</span>
+      </div>
+
+      <!-- Cottage -->
+      <div class="pricing-table-wrap">
+        <div class="pt-header">🏡 Cottage — 3 ห้อง</div>
+        <table class="pt">
+          <thead>
+            <tr>
+              <th style="width:220px">ห้อง</th>
+              <th>ราคาเดิม (Low)</th>
+              <th>ราคาเดิม (High)</th>
+              <th>Peak Season</th>
+              <th style="width:110px">ส่วนลด %</th>
+              <th style="color:var(--success)">ราคาหลังลด (Low)</th>
+              <th style="color:var(--warning)">ราคาหลังลด (High)</th>
+            </tr>
+          </thead>
+          <tbody id="cottageTbody"></tbody>
+        </table>
+      </div>
+
+      <!-- Bungalow -->
+      <div class="pricing-table-wrap">
+        <div class="pt-header">🏘️ Bungalow — 4 ห้อง (2 หลัง)</div>
+        <div style="padding:8px 18px;font-size:12px;color:var(--muted);background:var(--cream);border-bottom:1px solid var(--border)">
+          หลังที่ 1 (B4, B5) — ด้านในรีสอร์ท &nbsp;·&nbsp; หลังที่ 2 (B6, B7) — โลเคชั่นดี เห็นทะเลชัด เรทจองสูง
+        </div>
+        <table class="pt">
+          <thead>
+            <tr>
+              <th style="width:220px">ห้อง</th>
+              <th>ราคาเดิม (Low)</th>
+              <th>ราคาเดิม (High)</th>
+              <th>Peak Season</th>
+              <th style="width:110px">ส่วนลด %</th>
+              <th style="color:var(--success)">ราคาหลังลด (Low)</th>
+              <th style="color:var(--warning)">ราคาหลังลด (High)</th>
+            </tr>
+          </thead>
+          <tbody id="bungalowTbody"></tbody>
+        </table>
+      </div>
+
+      <!-- Extras -->
+      <div style="background:white;border:1px solid var(--border);border-radius:var(--radius);padding:18px 22px;display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+        <div>
+          <div style="font-size:11px;font-weight:700;color:var(--saffron-deep);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:8px">🛏️ เตียงเสริม (C2, C3 เท่านั้น)</div>
+          <div style="font-size:13px;color:var(--muted);line-height:1.9">Low Season: <strong style="color:var(--text)">+500 บาท/คืน</strong><br>High Season: <strong style="color:var(--text)">+1,000 บาท/คืน</strong></div>
+        </div>
+        <div>
+          <div style="font-size:11px;font-weight:700;color:var(--saffron-deep);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:8px">🐾 สัตว์เลี้ยง (ทุกห้อง · น้ำหนัก ≤10 กก.)</div>
+          <div style="font-size:13px;color:var(--muted);line-height:1.9">Low Season: <strong style="color:var(--text)">500 บาท/ตัว/การจอง</strong><br>High Season: <strong style="color:var(--text)">500 บาท/ตัว/คืน</strong> &nbsp;<span style="color:var(--danger);font-size:12px">⚠️ ช่วง High Season ล่าสุดงดรับ</span></div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- FORM MODAL -->
+<div class="modal-overlay" id="formModal" style="display:none" onclick="closeIfOverlay(event,'formModal')">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="formModalTitle">สร้างแคมเปญใหม่</span>
+      <button class="modal-close" onclick="closeModal('formModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-tabs">
+        <button class="ftab-btn active" onclick="switchTab(0,this)">ข้อมูลหลัก</button>
+        <button class="ftab-btn" onclick="switchTab(1,this)">รายละเอียด & เงื่อนไข</button>
+        <button class="ftab-btn" onclick="switchTab(2,this)">ช่องทาง & หมายเหตุ</button>
+      </div>
+      <div id="ftab0">
+        <div class="fsection">
+          <div class="fsection-title">ข้อมูลพื้นฐาน</div>
+          <div class="fgrid"><div class="fgroup"><label>ชื่อแคมเปญ <span class="req">*</span></label><input type="text" id="f_name" placeholder="เช่น Rainy Season Special 2026"></div></div>
+          <div class="fgrid fgrid-2" style="margin-top:14px">
+            <div class="fgroup"><label>ประเภทแคมเปญ <span class="req">*</span></label>
+              <select id="f_type" onchange="onTypeChange(this.value)"><option value="">-- เลือกประเภท --</option><option value="room">🏠 โปรโมชั่นห้องพัก</option><option value="fb">🍽️ ร้านอาหาร & บาร์</option><option value="package">📦 Package (ห้อง + อาหาร)</option></select>
+            </div>
+            <div class="fgroup"><label>แท็ก</label><input type="text" id="f_tag" placeholder="เช่น High Season, Direct Only"></div>
+          </div>
+        </div>
+        <div class="fsection">
+          <div class="fsection-title">ช่วงเวลาโปรโมชั่น</div>
+          <div class="fgrid fgrid-2">
+            <div class="fgroup"><label>เริ่มโปรโมชั่น <span class="req">*</span></label><input type="date" id="f_start"></div>
+            <div class="fgroup"><label>สิ้นสุดโปรโมชั่น <span class="req">*</span></label><input type="date" id="f_end"></div>
+          </div>
+          <div class="fgrid fgrid-2" style="margin-top:12px">
+            <div class="fgroup">
+              <label>📅 วัน Launch โปร</label>
+              <input type="date" id="f_launch">
+              <span style="font-size:11px;color:var(--muted);margin-top:2px">วันที่เริ่มประกาศโปรต่อลูกค้า</span>
+            </div>
+            <div class="fgroup">
+              <label>⚡ Approve ภายในวันที่</label>
+              <input type="date" id="f_approve_by">
+              <span style="font-size:11px;color:var(--muted);margin-top:2px">Owner ต้อง Approve ก่อนวันนี้</span>
+            </div>
+          </div>
+        </div>
+        <div class="fsection" id="roomPickSection" style="display:none">
+          <div class="fsection-title">ห้องพักและราคาโปรโมชั่น</div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:10px">เลือกห้องที่รวมในโปรโมชั่น แล้วใส่ราคาโปรของแต่ละ Season</div>
+          <div id="roomGridContainer"></div>
+        </div>
+
+        <div class="fsection" id="genericPriceSection">
+          <div class="fsection-title">ราคาโปรโมชั่น</div>
+          <div class="fgrid fgrid-3">
+            <div class="fgroup"><label>ราคาปกติ (THB)</label><input type="number" id="f_orig" placeholder="Rack Rate"></div>
+            <div class="fgroup"><label>ราคาโปรโมชั่น (THB)</label><input type="number" id="f_promo" placeholder="ราคาที่ขาย"></div>
+            <div class="fgroup"><label>ส่วนลด (%)</label><input type="number" id="f_disc" placeholder="อัตโนมัติ" readonly style="background:#f5f5f5"></div>
+          </div>
+        </div>
+      </div>
+      <div id="ftab1" style="display:none">
+        <div class="fsection">
+          <div class="fsection-title">รายละเอียด</div>
+          <div class="fgroup"><label>คำอธิบาย <span class="req">*</span></label><textarea id="f_desc" placeholder="อธิบายสิ่งที่แขกจะได้รับ..."></textarea></div>
+          <div class="fgroup" style="margin-top:12px"><label>สิ่งที่รวมอยู่</label><textarea id="f_includes" placeholder="เช่น&#10;- ห้อง C1 2 คืน&#10;- อาหารเช้า 2 ท่าน"></textarea></div>
+          <div class="fgroup" style="margin-top:12px"><label>เงื่อนไขและข้อยกเว้น</label><textarea id="f_terms" placeholder="เช่น&#10;- จองล่วงหน้า 7 วัน&#10;- Blackout: ปีใหม่, คริสต์มาส"></textarea></div>
+        </div>
+      </div>
+      <div id="ftab2" style="display:none">
+        <div class="fsection">
+          <div class="fsection-title">ช่องทางโปรโมต</div>
+          <div class="chip-group">
+            <label class="cchip" onclick="toggleChip(event,this)"><input type="checkbox" value="instagram"> 📸 Instagram</label>
+            <label class="cchip" onclick="toggleChip(event,this)"><input type="checkbox" value="facebook"> 📘 Facebook</label>
+            <label class="cchip" onclick="toggleChip(event,this)"><input type="checkbox" value="tiktok"> 🎵 TikTok</label>
+            <label class="cchip" onclick="toggleChip(event,this)"><input type="checkbox" value="booking"> 🏨 Booking.com</label>
+            <label class="cchip" onclick="toggleChip(event,this)"><input type="checkbox" value="agoda"> 🌐 Agoda</label>
+            <label class="cchip" onclick="toggleChip(event,this)"><input type="checkbox" value="direct"> 💬 Direct / Walk-in</label>
+            <label class="cchip" onclick="toggleChip(event,this)"><input type="checkbox" value="line"> 💚 LINE</label>
+          </div>
+        </div>
+        <div class="fsection">
+          <div class="fsection-title">หมายเหตุภายใน</div>
+          <div class="fgroup"><label>หมายเหตุ (ไม่แสดงต่อลูกค้า)</label><textarea id="f_notes" placeholder="ข้อสังเกต เป้าหมาย คำแนะนำ..."></textarea></div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeModal('formModal')">ยกเลิก</button>
+      <button class="btn-secondary btn-sm" onclick="saveCampaign('draft')">💾 บันทึก Draft</button>
+      <button class="btn-primary" id="submitBtn" onclick="saveCampaign('pending')">📤 ส่งขออนุมัติ</button>
+    </div>
+  </div>
+</div>
+
+<!-- CLOUD SYNC MODAL -->
+<div class="modal-overlay" id="syncModal" style="display:none" onclick="closeIfOverlay(event,'syncModal')">
+  <div class="modal" style="max-width:560px">
+    <div class="modal-header">
+      <span class="modal-title">☁️ Cloud Sync — ใช้งานหลายเครื่อง</span>
+      <button class="modal-close" onclick="closeModal('syncModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="syncStatusBar" style="display:none;padding:10px 14px;border-radius:8px;margin-bottom:16px;font-size:13px;font-weight:600"></div>
+
+      <div style="background:var(--cream);border-radius:10px;padding:16px;margin-bottom:20px;font-size:13px;line-height:1.7;color:var(--text)">
+        <b>วิธีตั้งค่า Firebase (ฟรี ใช้เวลา ~5 นาที)</b><br>
+        <ol style="margin:10px 0 0 18px;padding:0">
+          <li>ไปที่ <b>console.firebase.google.com</b> → เข้าสู่ระบบด้วย Google</li>
+          <li>กด <b>Add project</b> → ตั้งชื่อ (เช่น "saffron-dashboard") → Create</li>
+          <li>ในเมนูซ้าย → <b>Build → Realtime Database → Create database</b></li>
+          <li>เลือก location ใกล้ที่สุด → เริ่มใน <b>test mode</b> → Enable</li>
+          <li>กลับหน้าแรก Project → ⚙️ Project settings → <b>Your apps → เพิ่ม Web app (&lt;/&gt;)</b></li>
+          <li>ตั้งชื่อ app → ก็อปปี้ <b>firebaseConfig</b> object ทั้งหมด → วางในช่องด้านล่าง</li>
+        </ol>
+      </div>
+
+      <div class="fgroup">
+        <label>Firebase Config <span class="req">*</span></label>
+        <textarea id="fbConfigInput" style="min-height:140px;font-family:monospace;font-size:12px" placeholder='วาง firebaseConfig ที่นี่ เช่น:
+{
+  "apiKey": "AIza...",
+  "authDomain": "xxx.firebaseapp.com",
+  "databaseURL": "https://xxx-default-rtdb.firebaseio.com",
+  "projectId": "xxx",
+  "storageBucket": "xxx.appspot.com",
+  "messagingSenderId": "123456",
+  "appId": "1:123:web:abc"
+}'></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" id="syncDisconnectBtn" style="display:none;color:var(--danger)" onclick="disconnectFirebase()">🔌 ยกเลิกการเชื่อมต่อ</button>
+      <button class="btn-secondary" onclick="closeModal('syncModal')">ปิด</button>
+      <button class="btn-primary" onclick="connectFirebase()">☁️ เชื่อมต่อ</button>
+    </div>
+  </div>
+</div>
+
+<!-- DETAIL MODAL -->
+<div class="modal-overlay" id="detailModal" style="display:none" onclick="closeIfOverlay(event,'detailModal')">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="detailTitle"></span>
+      <button class="modal-close" onclick="closeModal('detailModal')">✕</button>
+    </div>
+    <div class="modal-body" id="detailBody"></div>
+    <div class="modal-footer" id="detailFooter"></div>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+<script>
+// ====== ROOM DATA ======
+const ROOMS = [
+  { id:'C1', g:'cottage', name:'Cottage Suite Seafront', note:'วิวทะเลดีที่สุด · ใกล้ทะเลมากสุด · Max 2 คน',
+    tags:[{cls:'rt-best',label:'Best View'}], extraBed:false,
+    lowMin:1800, lowMax:1800, highMin:3000, highMax:4000, peakMin:4500, peakMax:5500 },
+  { id:'C3', g:'cottage', name:'Cottage Deluxe Seaview', note:'Sea View · เพิ่มเตียงเสริมได้ · Max 3 คน',
+    tags:[{cls:'rt-pop',label:'Popular'},{cls:'rt-xb',label:'Extra Bed'}], extraBed:true,
+    lowMin:1500, lowMax:1500, highMin:2800, highMax:4000, peakMin:null, peakMax:null },
+  { id:'C2', g:'cottage', name:'Cottage Partial Seaview', note:'วิวทะเลบางส่วน · เพิ่มเตียงเสริมได้ · Max 3 คน',
+    tags:[{cls:'rt-xb',label:'Extra Bed'}], extraBed:true,
+    lowMin:1200, lowMax:1200, highMin:2500, highMax:3500, peakMin:null, peakMax:null },
+  { id:'B7', g:'bungalow', name:'Bungalow Upper · หลังที่ 2', note:'ชั้นบน · โลเคชั่นดี · เรทจองสูงมาก · Max 2 คน',
+    tags:[{cls:'rt-pop',label:'🔥 เรทจองสูงสุด'},{cls:'rt-best',label:'Best Location'}],
+    lowMin:1100, lowMax:1200, highMin:2700, highMax:3500, peakMin:null, peakMax:null },
+  { id:'B5', g:'bungalow', name:'Bungalow Upper · หลังที่ 1', note:'ชั้นบน · ด้านในรีสอร์ท · Max 2 คน',
+    tags:[],
+    lowMin:1100, lowMax:1200, highMin:2700, highMax:3500, peakMin:null, peakMax:null },
+  { id:'B6', g:'bungalow', name:'Bungalow Lower · หลังที่ 2', note:'ชั้นล่าง · โลเคชั่นดี · จองมากด้านราคา · Max 2 คน',
+    tags:[{cls:'rt-pop',label:'จองมากสุด'}],
+    lowMin:950, lowMax:1100, highMin:1800, highMax:2500, peakMin:null, peakMax:null },
+  { id:'B4', g:'bungalow', name:'Bungalow Lower · หลังที่ 1', note:'ชั้นล่าง · ด้านในสุด · ห้องสำรอง · Max 2 คน',
+    tags:[{cls:'rt-wi',label:'Walk-in / Direct เท่านั้น'}],
+    lowMin:950, lowMax:1100, highMin:1800, highMax:2500, peakMin:null, peakMax:null },
+];
+
+let roomDisc = {}; // per-room discount overrides
+
+// ====== STATE ======
+let currentRole = null;
+let campaigns = JSON.parse(localStorage.getItem('sos_v3') || '[]');
+let editingId = null;
+let currentFilter = 'all';
+let currentSearch = '';
+
+// ====== FIREBASE CLOUD SYNC ======
+let fbRef = null;
+
+function save() {
+  localStorage.setItem('sos_v3', JSON.stringify(campaigns));
+  if (fbRef) fbRef.set(campaigns).catch(e => console.warn('Firebase save error', e));
+}
+
+function setSyncStatus(status, msg) {
+  const btn = document.getElementById('syncBtn');
+  if (btn) {
+    btn.textContent = status === 'online' ? '☁️✅' : status === 'error' ? '☁️❌' : '☁️';
+    btn.title = status === 'online' ? 'Cloud Sync: เชื่อมต่อแล้ว — คลิกเพื่อตั้งค่า' : 'Cloud Sync: คลิกเพื่อเชื่อมต่อ';
+  }
+  const bar = document.getElementById('syncStatusBar');
+  if (bar && msg) {
+    bar.style.display = 'block';
+    bar.style.background = status === 'online' ? 'var(--success-bg)' : status === 'error' ? '#FEE2E2' : 'var(--cream)';
+    bar.style.color = status === 'online' ? 'var(--success)' : status === 'error' ? 'var(--danger)' : 'var(--text)';
+    bar.textContent = msg;
+  }
+}
+
+function initFirebase(config) {
+  try {
+    if (!window.firebase) { setSyncStatus('error', '❌ Firebase SDK ยังโหลดไม่เสร็จ'); return false; }
+    if (firebase.apps.length) firebase.apps.forEach(a => a.delete());
+    const app = firebase.initializeApp(config);
+    const db = firebase.database(app);
+    fbRef = db.ref('sos_v3');
+    fbRef.on('value', snap => {
+      const data = snap.val();
+      if (Array.isArray(data) && data.length > 0) {
+        campaigns = data;
+        localStorage.setItem('sos_v3', JSON.stringify(campaigns));
+        renderAll();
+      }
+      setSyncStatus('online', '✅ Cloud Sync เชื่อมต่อแล้ว — ข้อมูล sync อัตโนมัติทุกเครื่อง');
+      document.getElementById('syncDisconnectBtn').style.display = '';
+    }, err => { setSyncStatus('error', '❌ เชื่อมต่อไม่ได้: ' + err.message); });
+    return true;
+  } catch(e) { setSyncStatus('error', '❌ Config ไม่ถูกต้อง: ' + e.message); return false; }
+}
+
+function connectFirebase() {
+  const raw = document.getElementById('fbConfigInput').value.trim();
+  if (!raw) { setSyncStatus('error', '❌ กรุณาวาง Firebase Config ก่อน'); return; }
+  let config;
+  try {
+    // Strip "const firebaseConfig = " and trailing semicolon if present
+    const cleaned = raw.replace(/^[\s\S]*?=\s*/, '').replace(/;?\s*$/, '').trim();
+    // Use Function() to parse JS object literal (handles unquoted keys from Firebase console)
+    config = new Function('return (' + cleaned + ')')();
+  } catch(e) { setSyncStatus('error', '❌ วาง Config ไม่ถูกต้อง — ลองก็อปปี้ใหม่ตั้งแต่ { ถึง }'); return; }
+  if (!config.databaseURL) { setSyncStatus('error', '❌ ไม่พบ databaseURL — กรุณาเพิ่ม Realtime Database ใน Firebase'); return; }
+  if (initFirebase(config)) {
+    localStorage.setItem('sos_fb_config', JSON.stringify(config));
+    showToast('☁️ เชื่อมต่อ Cloud Sync แล้ว', 'success');
+  }
+}
+
+function disconnectFirebase() {
+  if (fbRef) { fbRef.off(); fbRef = null; }
+  if (window.firebase && firebase.apps.length) firebase.apps.forEach(a => a.delete());
+  localStorage.removeItem('sos_fb_config');
+  setSyncStatus('off', '');
+  document.getElementById('syncStatusBar').style.display = 'none';
+  document.getElementById('syncDisconnectBtn').style.display = 'none';
+  showToast('ยกเลิก Cloud Sync แล้ว');
+}
+
+function openSyncModal() {
+  const saved = localStorage.getItem('sos_fb_config');
+  if (saved) document.getElementById('fbConfigInput').value = saved;
+  if (fbRef) {
+    setSyncStatus('online', '✅ Cloud Sync เชื่อมต่อแล้ว — ข้อมูล sync อัตโนมัติทุกเครื่อง');
+    document.getElementById('syncDisconnectBtn').style.display = '';
+  }
+  document.getElementById('syncModal').style.display = 'flex';
+}
+
+// Auto-connect with embedded config (no setup required)
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyAw0B-4dh8YLbD-aTkqw8_wnXBHlS3zAts",
+  authDomain: "saffron-dashboard.firebaseapp.com",
+  databaseURL: "https://saffron-dashboard-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "saffron-dashboard",
+  storageBucket: "saffron-dashboard.firebasestorage.app",
+  messagingSenderId: "54933558857",
+  appId: "1:54933558857:web:6039508382618263e1d198"
+};
+window.addEventListener('load', function() {
+  try { initFirebase(FIREBASE_CONFIG); } catch(e) { console.error('Firebase init error:', e); }
+});
+
+// ====== AUTH ======
+function login(role) {
+  currentRole = role;
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  document.getElementById('roleBadge').textContent = role === 'owner' ? '👑 Owner' : '📋 Manager';
+  renderPricing();
+  renderAll();
+  const n = campaigns.filter(c => c.status === 'pending').length;
+  if (role === 'owner' && n > 0) showToast(`มี ${n} แคมเปญรออนุมัติ`, 'error');
+}
+function logout() {
+  currentRole = null;
+  document.getElementById('loginScreen').style.display = 'flex';
+  document.getElementById('app').style.display = 'none';
+}
+
+// ====== PAGE ======
+function showPage(name, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  btn.classList.add('active');
+}
+
+// ====== CAMPAIGNS ======
+function renderAll() { renderSummary(); renderList(); updateBadge(); }
+
+function updateBadge() {
+  const n = campaigns.filter(c => c.status === 'pending').length;
+  const el = document.getElementById('pendingBadge');
+  el.textContent = n; el.style.display = n > 0 ? 'inline' : 'none';
+}
+
+function renderSummary() {
+  const cards = [
+    { key:'all', num:campaigns.length, label:'ทั้งหมด', cls:'s-all' },
+    { key:'pending', num:campaigns.filter(c=>c.status==='pending').length, label:'รออนุมัติ', cls:'s-pending' },
+    { key:'approved', num:campaigns.filter(c=>c.status==='approved').length, label:'อนุมัติแล้ว', cls:'s-approved' },
+    { key:'live', num:campaigns.filter(c=>c.status==='live').length, label:'Live', cls:'s-live' },
+    { key:'draft', num:campaigns.filter(c=>c.status==='draft').length, label:'Draft', cls:'s-draft' },
+  ];
+  document.getElementById('summaryGrid').innerHTML = cards.map(c => `
+    <div class="stat-card ${c.cls} ${currentFilter===c.key?'active':''}" onclick="setFilter('${c.key}',null)">
+      <div class="stat-num">${c.num}</div><div class="stat-label">${c.label}</div>
+    </div>`).join('');
+}
+
+function urgencyInfo(c) {
+  if (c.status !== 'pending' || !c.approveBy) return null;
+  const today = new Date(); today.setHours(0,0,0,0);
+  const deadline = new Date(c.approveBy); deadline.setHours(0,0,0,0);
+  const days = Math.ceil((deadline - today) / 86400000);
+  if (days < 0)  return { days, icon:'🚨', label:`เกินกำหนด ${Math.abs(days)} วันแล้ว!`, color:'#991B1B', bg:'#FEE2E2', border:'#FCA5A5' };
+  if (days === 0) return { days, icon:'🔴', label:'ต้อง Approve วันนี้!',              color:'#991B1B', bg:'#FEE2E2', border:'#FCA5A5' };
+  if (days <= 2)  return { days, icon:'🟠', label:`ด่วน! เหลือ ${days} วัน`,           color:'#92400E', bg:'#FEF3C7', border:'#FCD34D' };
+  if (days <= 5)  return { days, icon:'🟡', label:`เหลือ ${days} วัน`,                 color:'#065F46', bg:'#ECFDF5', border:'#6EE7B7' };
+  return               { days, icon:'🟢', label:`เหลือ ${days} วัน`,                   color:'#065F46', bg:'#ECFDF5', border:'#6EE7B7' };
+}
+
+function renderList() {
+  const list = campaigns.filter(c => {
+    const mf = currentFilter==='all'?true:currentFilter==='room'?c.type==='room':currentFilter==='fb'?c.type==='fb':c.status===currentFilter;
+    const ms = !currentSearch || c.name.toLowerCase().includes(currentSearch.toLowerCase());
+    return mf && ms;
+  }).sort((a,b) => {
+    // Pending with approveBy sorted by urgency first
+    if (a.status==='pending' && b.status==='pending') {
+      if (a.approveBy && b.approveBy) return new Date(a.approveBy)-new Date(b.approveBy);
+      if (a.approveBy) return -1; if (b.approveBy) return 1;
+    }
+    if (a.status==='pending' && b.status!=='pending') return -1;
+    if (b.status==='pending' && a.status!=='pending') return 1;
+    return new Date(b.createdAt)-new Date(a.createdAt);
+  });
+
+  const el = document.getElementById('campaignList');
+  if (!list.length) { el.innerHTML='<div class="empty-state"><div class="empty-icon">📭</div><h3>ไม่พบแคมเปญ</h3><p>ลองเปลี่ยน Filter หรือสร้างใหม่</p></div>'; return; }
+
+  el.innerHTML = list.map(c => {
+    const tl = {room:'🏠 ห้องพัก',fb:'🍽️ F&B',package:'📦 Package'}[c.type]||c.type;
+    const tc = {room:'t-room',fb:'t-fb',package:'t-package'}[c.type]||'';
+    const period = c.startDate&&c.endDate?`${fmtDate(c.startDate)} – ${fmtDate(c.endDate)}`:'—';
+    const si = statusInfo(c.status);
+    let acts = `<button class="btn-icon btn-sm" onclick="event.stopPropagation();openDetail('${c.id}')">👁️</button>`;
+    if (c.status==='draft'||c.status==='rejected') acts+=`<button class="btn-icon btn-sm" onclick="event.stopPropagation();openEdit('${c.id}')">✏️</button>`;
+    if (c.status==='pending'&&currentRole==='owner') acts+=`<button class="btn-approve btn-sm" onclick="event.stopPropagation();quickApprove('${c.id}')">✅ Approve</button>`;
+    if (c.status==='approved') acts+=`<button class="btn-golive btn-sm" onclick="event.stopPropagation();doStatus('${c.id}','live','เริ่ม Live')">🚀 Go Live</button>`;
+    if (c.status==='live'&&currentRole==='owner') acts+=`<button class="btn-secondary btn-sm" onclick="event.stopPropagation();doStatus('${c.id}','expired','ปิดแคมเปญ')">⏹ ปิด</button>`;
+    acts+=`<button class="btn-danger btn-sm" onclick="event.stopPropagation();delCamp('${c.id}')">🗑️</button>`;
+    return `<div class="campaign-item" onclick="openDetail('${c.id}')">
+      <div class="crow">
+        <div>
+          <div class="c-name">${c.name}${c.tag?`<span style="font-size:11px;background:var(--saffron-pale);color:var(--saffron-deep);padding:2px 8px;border-radius:10px">${c.tag}</span>`:''}</div>
+          ${(()=>{const u=urgencyInfo(c);return u?`<div style="display:inline-flex;align-items:center;gap:5px;margin-top:4px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;color:${u.color};background:${u.bg};border:1px solid ${u.border}">${u.icon} ${u.label}${c.launchDate?` · Launch ${fmtDate(c.launchDate)}`:''}${c.approveBy?` · Approve ภายใน ${fmtDate(c.approveBy)}`:''}</div>`:''})()}
+          <div class="c-meta">สร้างโดย ${c.createdBy} · ${fmtDT(c.createdAt)}</div>
+        </div>
+        <div><span class="type-badge ${tc}">${tl}</span></div>
+        <div class="c-meta">${period}</div>
+        <div><span class="sbadge ${si.cls}">${si.label}</span></div>
+        <div class="c-actions">${acts}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ====== PRICING ======
+function renderPricing() {
+  const gd = parseFloat(document.getElementById('globalDiscount')?.value||0)||0;
+  document.getElementById('cottageTbody').innerHTML = ROOMS.filter(r=>r.g==='cottage').map(r=>pRow(r,gd)).join('');
+  document.getElementById('bungalowTbody').innerHTML = ROOMS.filter(r=>r.g==='bungalow').map(r=>pRow(r,gd)).join('');
+}
+
+function pRow(r, gd) {
+  const d = roomDisc[r.id] !== undefined ? roomDisc[r.id] : gd;
+  const m = 1 - d/100;
+
+  const lo = r.lowMin===r.lowMax ? `฿${r.lowMin.toLocaleString()}` : `฿${r.lowMin.toLocaleString()}–${r.lowMax.toLocaleString()}`;
+  const hi = `฿${r.highMin.toLocaleString()}–${r.highMax.toLocaleString()}`;
+  const pk = r.peakMin ? `฿${r.peakMin.toLocaleString()}–${r.peakMax.toLocaleString()}` : '<span class="p-na">—</span>';
+
+  const loAMin = Math.round(r.lowMin*m), loAMax = Math.round(r.lowMax*m);
+  const hiAMin = Math.round(r.highMin*m), hiAMax = Math.round(r.highMax*m);
+
+  const loAfter = d===0 ? '<span class="p-na">—</span>' :
+    loAMin===loAMax ? `<span class="p-after low">฿${loAMin.toLocaleString()}</span>` :
+    `<span class="p-after low">฿${loAMin.toLocaleString()} – ฿${loAMax.toLocaleString()}</span>`;
+  const hiAfter = d===0 ? '<span class="p-na">—</span>' :
+    `<span class="p-after high">฿${hiAMin.toLocaleString()} – ฿${hiAMax.toLocaleString()}</span>`;
+
+  const save = d>0 ? `<div class="p-save">ประหยัด ${d}%</div>` : '';
+  const tags = r.tags.map(t=>`<span class="rtag ${t.cls}">${t.label}</span>`).join(' ');
+  const curVal = roomDisc[r.id] !== undefined ? roomDisc[r.id] : '';
+
+  return `<tr>
+    <td>
+      <span class="room-id">${r.id}</span>
+      <span class="room-name-sm">${r.name}</span>
+      <span class="room-note-sm">${r.note}</span>
+      ${tags}
+    </td>
+    <td><span class="p-orig">${lo}</span></td>
+    <td><span class="p-orig">${hi}</span></td>
+    <td>${pk}</td>
+    <td>
+      <div style="display:flex;align-items:center;gap:6px">
+        <input class="disc-input" type="number" value="${curVal}" placeholder="${gd||'0'}" min="0" max="90"
+          oninput="setRoomDisc('${r.id}',this.value)" title="ส่วนลดเฉพาะห้องนี้">
+        <span style="font-size:12px;color:var(--muted)">%</span>
+      </div>
+    </td>
+    <td>${loAfter}${save}</td>
+    <td>${hiAfter}</td>
+  </tr>`;
+}
+
+function applyGlobal() {
+  document.querySelectorAll('.gd-preset').forEach(b=>b.classList.remove('on'));
+  renderPricing();
+}
+
+function setGlobal(v) {
+  document.getElementById('globalDiscount').value = v;
+  document.querySelectorAll('.gd-preset').forEach(b=>b.classList.remove('on'));
+  if (v>0) event.target.classList.add('on');
+  roomDisc = {};
+  renderPricing();
+}
+
+function setRoomDisc(id, val) {
+  if (val===''||val===null) delete roomDisc[id];
+  else roomDisc[id] = parseFloat(val)||0;
+  renderPricing();
+}
+
+// ====== FORM ======
+function switchTab(i,btn) {
+  [0,1,2].forEach(n=>document.getElementById('ftab'+n).style.display=n===i?'block':'none');
+  document.querySelectorAll('.ftab-btn').forEach((b,n)=>b.classList.toggle('active',n===i));
+}
+
+function openCreateModal() {
+  editingId=null;
+  document.getElementById('formModalTitle').textContent='สร้างแคมเปญใหม่';
+  clearForm(); switchTab(0,document.querySelectorAll('.ftab-btn')[0]);
+  document.getElementById('submitBtn').textContent = currentRole==='owner'?'✅ บันทึก & อนุมัติเลย':'📤 ส่งขออนุมัติ';
+  document.getElementById('formModal').style.display='flex';
+}
+
+function openEdit(id) {
+  const c=campaigns.find(x=>x.id===id);if(!c)return;
+  editingId=id;
+  document.getElementById('formModalTitle').textContent='แก้ไขแคมเปญ';
+  clearForm();fillForm(c);switchTab(0,document.querySelectorAll('.ftab-btn')[0]);
+  document.getElementById('formModal').style.display='flex';
+}
+
+function clearForm() {
+  ['f_name','f_type','f_tag','f_start','f_end','f_launch','f_approve_by','f_orig','f_promo','f_disc','f_desc','f_includes','f_terms','f_notes'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  document.querySelectorAll('.cchip').forEach(el=>{el.classList.remove('checked');el.querySelector('input').checked=false;});
+  document.getElementById('roomPickSection').style.display='none';
+  document.getElementById('genericPriceSection').style.display='block';
+  clearRoomGrid();
+}
+
+function fillForm(c) {
+  document.getElementById('f_name').value=c.name||'';
+  document.getElementById('f_type').value=c.type||'';
+  onTypeChange(c.type||'');
+  if(c.rooms&&c.rooms.length) fillRoomGrid(c.rooms);
+  document.getElementById('f_tag').value=c.tag||'';
+  document.getElementById('f_start').value=c.startDate||'';
+  document.getElementById('f_end').value=c.endDate||'';
+  document.getElementById('f_launch').value=c.launchDate||'';
+  document.getElementById('f_approve_by').value=c.approveBy||'';
+  document.getElementById('f_orig').value=c.originalPrice||'';
+  document.getElementById('f_promo').value=c.promoPrice||'';
+  document.getElementById('f_disc').value=c.discount||'';
+  document.getElementById('f_desc').value=c.desc||'';
+  document.getElementById('f_includes').value=c.includes||'';
+  document.getElementById('f_terms').value=c.terms||'';
+  document.getElementById('f_notes').value=c.notes||'';
+  (c.channels||[]).forEach(v=>{document.querySelectorAll('.cchip').forEach(el=>{if(el.querySelector('input').value===v){el.classList.add('checked');el.querySelector('input').checked=true;}});});
+}
+
+function getForm() {
+  const chs=[];document.querySelectorAll('.cchip.checked input').forEach(el=>chs.push(el.value));
+  return {name:document.getElementById('f_name').value.trim(),type:document.getElementById('f_type').value,tag:document.getElementById('f_tag').value.trim(),
+    startDate:document.getElementById('f_start').value,endDate:document.getElementById('f_end').value,
+    launchDate:document.getElementById('f_launch').value,approveBy:document.getElementById('f_approve_by').value,
+    originalPrice:document.getElementById('f_orig').value,promoPrice:document.getElementById('f_promo').value,discount:document.getElementById('f_disc').value,
+    rooms:getRoomPricing(),
+    desc:document.getElementById('f_desc').value.trim(),includes:document.getElementById('f_includes').value.trim(),
+    terms:document.getElementById('f_terms').value.trim(),notes:document.getElementById('f_notes').value.trim(),channels:chs};
+}
+
+function saveCampaign(target) {
+  const d=getForm();
+  if(!d.name){showToast('กรุณาใส่ชื่อแคมเปญ','error');switchTab(0,document.querySelectorAll('.ftab-btn')[0]);return;}
+  if(!d.type){showToast('กรุณาเลือกประเภท','error');switchTab(0,document.querySelectorAll('.ftab-btn')[0]);return;}
+  if(target==='pending'&&!d.desc){showToast('กรุณาใส่คำอธิบายก่อนส่ง','error');switchTab(1,document.querySelectorAll('.ftab-btn')[1]);return;}
+  const now=new Date().toISOString(),by=currentRole==='owner'?'Owner':'Manager';
+  const st=currentRole==='owner'&&target==='pending'?'approved':target;
+  const act=st==='draft'?'บันทึก Draft':st==='approved'?'สร้างและอนุมัติ':'ส่งขออนุมัติ';
+  if(editingId){
+    const i=campaigns.findIndex(c=>c.id===editingId);
+    campaigns[i]={...campaigns[i],...d,status:st,updatedAt:now,history:[...(campaigns[i].history||[]),{action:act,by,at:now}]};
+    showToast('แก้ไขเรียบร้อย ✅');
+  } else {
+    campaigns.push({...d,id:'c'+Date.now(),status:st,createdBy:by,createdAt:now,updatedAt:now,history:[{action:act,by,at:now}]});
+    showToast(act+' ✅');
+  }
+  save();closeModal('formModal');renderAll();
+}
+
+// ====== DETAIL ======
+function openDetail(id) {
+  const c=campaigns.find(x=>x.id===id);if(!c)return;
+  const tl={room:'🏠 ห้องพัก',fb:'🍽️ ร้านอาหาร',package:'📦 Package'}[c.type]||c.type;
+  const tc={room:'t-room',fb:'t-fb',package:'t-package'}[c.type]||'';
+  const si=statusInfo(c.status);
+  const disc=c.originalPrice&&c.promoPrice?Math.round((1-c.promoPrice/c.originalPrice)*100)+'%':c.discount?c.discount+'%':'—';
+  const ph=c.promoPrice?`฿${Number(c.promoPrice).toLocaleString()} <s style="color:var(--muted);font-size:12px">฿${Number(c.originalPrice||0).toLocaleString()}</s> <span style="color:var(--success);font-size:12px">(ลด ${disc})</span>`:c.originalPrice?`฿${Number(c.originalPrice).toLocaleString()}`:'—';
+  const chs=(c.channels||[]).map(ch=>({instagram:'📸',facebook:'📘',tiktok:'🎵',booking:'🏨',agoda:'🌐',direct:'💬',line:'💚'}[ch]||'')+' '+ch).join(' · ');
+  let ap='';
+  if(c.status==='pending'&&currentRole==='owner') ap=`<div class="approval-box"><div style="font-size:13px;font-weight:700;color:var(--warning);margin-bottom:10px">⚡ รออนุมัติจาก Owner</div><div class="fgroup" style="margin-bottom:10px"><label>หมายเหตุ</label><textarea id="apCmt" style="min-height:60px" placeholder="ความคิดเห็น หรือสิ่งที่ต้องแก้ไข..."></textarea></div><div style="display:flex;gap:8px"><button class="btn-approve" onclick="approveD('${c.id}')">✅ อนุมัติ</button><button class="btn-reject" onclick="rejectD('${c.id}')">❌ ส่งกลับแก้ไข</button></div></div>`;
+  const hist=(c.history||[]).slice().reverse().map(h=>`<div class="h-item"><div class="h-dot"></div><div><span class="h-action">${h.action}</span> โดย ${h.by} · ${fmtDT(h.at)}${h.comment?`<div style="font-style:italic;margin-top:2px">"${h.comment}"</div>`:''}</div></div>`).join('');
+  document.getElementById('detailTitle').textContent=c.name;
+  const urg = urgencyInfo(c);
+  document.getElementById('detailBody').innerHTML=`
+    ${urg?`<div style="display:flex;align-items:center;gap:10px;padding:12px 16px;border-radius:10px;margin-bottom:16px;background:${urg.bg};border:1.5px solid ${urg.border}">
+      <span style="font-size:22px">${urg.icon}</span>
+      <div>
+        <div style="font-size:13px;font-weight:800;color:${urg.color}">${urg.label}</div>
+        ${c.approveBy?`<div style="font-size:12px;color:${urg.color};opacity:0.8;margin-top:2px">Approve ภายใน: ${fmtDate(c.approveBy)}</div>`:''}
+        ${c.launchDate?`<div style="font-size:12px;color:${urg.color};opacity:0.8">Launch: ${fmtDate(c.launchDate)}</div>`:''}
+      </div>
+    </div>`:''}
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px">
+      <span class="sbadge ${si.cls}">${si.label}</span><span class="type-badge ${tc}">${tl}</span>
+      ${c.tag?`<span style="font-size:12px;background:var(--saffron-pale);color:var(--saffron-deep);padding:3px 10px;border-radius:10px">${c.tag}</span>`:''}
+    </div>
+    <div class="detail-grid">
+      <div class="di"><div class="dl">ช่วงเวลาโปรโมชั่น</div><div class="dv">${c.startDate?`${fmtDate(c.startDate)} – ${fmtDate(c.endDate)}`:'—'}</div></div>
+      ${c.launchDate?`<div class="di"><div class="dl">📅 วัน Launch โปร</div><div class="dv">${fmtDate(c.launchDate)}</div></div>`:''}
+      ${c.approveBy&&!urg?`<div class="di"><div class="dl">⚡ Approve ภายใน</div><div class="dv">${fmtDate(c.approveBy)}</div></div>`:''}
+      <div class="di"><div class="dl">ราคา</div><div class="dv">${ph}</div></div>
+      ${c.desc?`<div class="di full"><div class="dl">คำอธิบาย</div><div class="dv" style="white-space:pre-wrap">${c.desc}</div></div>`:''}
+      ${c.includes?`<div class="di full"><div class="dl">รายการที่รวม</div><div class="dv" style="white-space:pre-wrap">${c.includes}</div></div>`:''}
+      ${c.terms?`<div class="di full"><div class="dl">เงื่อนไข</div><div class="dv" style="white-space:pre-wrap;font-size:13px;color:var(--muted)">${c.terms}</div></div>`:''}
+      ${chs?`<div class="di full"><div class="dl">ช่องทาง</div><div class="dv">${chs}</div></div>`:''}
+      ${c.notes?`<div class="di full"><div class="dl">หมายเหตุภายใน</div><div class="dv" style="white-space:pre-wrap;font-size:13px;color:var(--muted);background:var(--cream);padding:10px;border-radius:8px">${c.notes}</div></div>`:''}
+    </div>${ap}
+    <div class="history-log"><div class="h-title">ประวัติ</div>${hist||'—'}</div>`;
+  let ft='';
+  if(c.status==='draft'||c.status==='rejected'){ft+=`<button class="btn-secondary" onclick="closeModal('detailModal');openEdit('${c.id}')">✏️ แก้ไข</button>`;ft+=`<button class="btn-primary" onclick="closeModal('detailModal');quickSubmit('${c.id}')">📤 ${c.status==='rejected'?'ส่งอีกครั้ง':'ส่งขออนุมัติ'}</button>`;}
+  if(c.status==='approved'&&currentRole==='owner') ft+=`<button class="btn-golive" onclick="doStatus('${c.id}','live','เริ่ม Live');closeModal('detailModal')">🚀 Go Live</button>`;
+  if(c.status==='live'&&currentRole==='owner') ft+=`<button class="btn-secondary" onclick="doStatus('${c.id}','expired','ปิดแคมเปญ');closeModal('detailModal')">⏹ ปิดแคมเปญ</button>`;
+  ft+=`<button class="btn-secondary" onclick="printCampaign('${c.id}')">📄 ดาวน์โหลด PDF</button>`;
+  ft+=`<button class="btn-secondary" onclick="closeModal('detailModal')">ปิด</button>`;
+  document.getElementById('detailFooter').innerHTML=ft;
+  document.getElementById('detailModal').style.display='flex';
+}
+
+// ====== PRINT / PDF ======
+function printCampaign(id) {
+  const c = campaigns.find(x => x.id === id); if (!c) return;
+  const si = statusInfo(c.status);
+  const statusColor = {live:'#2E7D32',approved:'#1A4A6B',pending:'#B45309',draft:'#555',rejected:'#C62828',expired:'#777'}[c.status]||'#555';
+  const typeLabel = {room:'🏠 โปรโมชั่นห้องพัก',fb:'🍽️ ร้านอาหาร & บาร์',package:'📦 Package'}[c.type]||c.type;
+  const dateRange = c.startDate ? `${fmtDate(c.startDate)} – ${fmtDate(c.endDate)}` : '—';
+  const channels = (c.channels||[]).map(ch=>({'instagram':'📸 Instagram','facebook':'📘 Facebook','tiktok':'🎵 TikTok','booking':'🏨 Booking.com','agoda':'🌐 Agoda','direct':'💬 Direct / Walk-in','line':'💚 LINE'}[ch]||ch)).join('  ·  ');
+  const approvedEntry = (c.history||[]).slice().reverse().find(h=>h.action==='อนุมัติแล้ว');
+
+  // Rooms table or generic price
+  let pricingHTML = '';
+  if (c.rooms && c.rooms.length) {
+    const rows = c.rooms.map(rd => {
+      const rm = ROOMS.find(x => x.id === rd.id) || {};
+      const modeLabel = rd.mode === 'price' ? 'ราคาโปร' : '% ส่วนลด';
+      const discStr = rd.discount ? `ลด ${rd.discount}%` : '—';
+      const promoStr = rd.promo ? `฿${Number(rd.promo).toLocaleString()}` : '—';
+      const rackStr = rd.rack ? `฿${Number(rd.rack).toLocaleString()}` : '—';
+      return `<tr>
+        <td style="font-weight:800;color:#C8860A;font-size:15px">${rd.id}</td>
+        <td>${rm.name||''}<br><span style="font-size:11px;color:#999">${rm.note||''}</span></td>
+        <td style="color:#999;text-decoration:line-through">${rackStr}</td>
+        <td style="text-align:center"><span style="background:#2E7D32;color:white;padding:2px 8px;border-radius:10px;font-size:12px;font-weight:700">${discStr}</span></td>
+        <td style="font-size:18px;font-weight:800;color:#2E7D32">${promoStr}<span style="font-size:11px;color:#999;font-weight:400">/คืน</span></td>
+      </tr>`;
+    }).join('');
+    pricingHTML = `<table style="width:100%;border-collapse:collapse;margin-top:8px">
+      <thead><tr style="background:#FDF3DC">
+        <th style="padding:8px 12px;text-align:left;border:1px solid #e8dcc8;font-size:11px;color:#8B5E00;text-transform:uppercase;letter-spacing:0.5px">ห้อง</th>
+        <th style="padding:8px 12px;text-align:left;border:1px solid #e8dcc8;font-size:11px;color:#8B5E00;text-transform:uppercase;letter-spacing:0.5px">ชื่อห้อง</th>
+        <th style="padding:8px 12px;text-align:left;border:1px solid #e8dcc8;font-size:11px;color:#8B5E00;text-transform:uppercase;letter-spacing:0.5px">ราคาปกติ</th>
+        <th style="padding:8px 12px;text-align:center;border:1px solid #e8dcc8;font-size:11px;color:#8B5E00;text-transform:uppercase;letter-spacing:0.5px">ส่วนลด</th>
+        <th style="padding:8px 12px;text-align:left;border:1px solid #e8dcc8;font-size:11px;color:#8B5E00;text-transform:uppercase;letter-spacing:0.5px">ราคาโปร</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+  } else if (c.promoPrice || c.originalPrice) {
+    const disc = c.originalPrice && c.promoPrice ? Math.round((1-c.promoPrice/c.originalPrice)*100) : (c.discount||0);
+    pricingHTML = `<div style="display:flex;gap:24px;align-items:center;padding:16px;background:#F1F8F1;border-radius:10px;border:1px solid #c8e6c9">
+      ${c.originalPrice?`<div><div style="font-size:11px;color:#888;margin-bottom:3px">ราคาปกติ</div><div style="font-size:16px;color:#999;text-decoration:line-through">฿${Number(c.originalPrice).toLocaleString()}</div></div>`:''}
+      ${c.promoPrice?`<div><div style="font-size:11px;color:#888;margin-bottom:3px">ราคาโปร</div><div style="font-size:24px;font-weight:800;color:#2E7D32">฿${Number(c.promoPrice).toLocaleString()}</div></div>`:''}
+      ${disc?`<div style="background:#2E7D32;color:white;padding:6px 14px;border-radius:20px;font-size:16px;font-weight:800">ลด ${disc}%</div>`:''}
+    </div>`;
+  } else { pricingHTML = '<p style="color:#999">ไม่ระบุราคา</p>'; }
+
+  const section = (title, content) => content ? `
+    <div style="margin-bottom:20px;padding-bottom:20px;border-bottom:1px solid #eee">
+      <div style="font-size:11px;font-weight:700;color:#C8860A;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">${title}</div>
+      <div style="font-size:14px;line-height:1.7;white-space:pre-wrap;color:#1a1a1a">${content}</div>
+    </div>` : '';
+
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
+  <title>Campaign Brief — ${c.name}</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#1a1a1a;padding:40px;max-width:800px;margin:0 auto;font-size:14px}
+    @media print{body{padding:20px}.no-print{display:none!important}@page{margin:1.5cm}}
+  </style>
+  </head><body>
+  <div class="no-print" style="background:#1A4A6B;color:white;padding:12px 20px;border-radius:10px;margin-bottom:24px;display:flex;justify-content:space-between;align-items:center">
+    <span style="font-weight:700">📄 Campaign Brief — พร้อมพิมพ์หรือบันทึก PDF</span>
+    <button onclick="window.print()" style="background:white;color:#1A4A6B;border:none;padding:8px 18px;border-radius:7px;font-weight:700;cursor:pointer;font-size:13px">🖨️ พิมพ์ / บันทึก PDF</button>
+  </div>
+
+  <!-- HEADER -->
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:28px;padding-bottom:18px;border-bottom:3px solid #C8860A">
+    <div>
+      <div style="font-size:22px;font-weight:800;color:#C8860A;letter-spacing:-0.5px">🌿 Saffron On The Sea</div>
+      <div style="font-size:12px;color:#999;margin-top:3px">Koh Chang · Campaign Brief</div>
+    </div>
+    <div style="text-align:right">
+      <span style="display:inline-block;padding:5px 14px;border-radius:20px;font-size:12px;font-weight:800;color:white;background:${statusColor}">${si.label}</span>
+      <div style="font-size:11px;color:#999;margin-top:6px">พิมพ์: ${new Date().toLocaleDateString('th-TH',{day:'numeric',month:'long',year:'numeric'})}</div>
+    </div>
+  </div>
+
+  <!-- TITLE -->
+  <h2 style="font-size:26px;font-weight:800;color:#1a1a1a;margin-bottom:10px;line-height:1.2">${c.name}</h2>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:28px">
+    <span style="padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;background:#E3F2FD;color:#1A4A6B">${typeLabel}</span>
+    ${c.tag?`<span style="padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;background:#FDF3DC;color:#8B5E00">${c.tag}</span>`:''}
+  </div>
+
+  <!-- DATE -->
+  ${section('ช่วงเวลาโปรโมชั่น', dateRange)}
+
+  <!-- PRICING -->
+  <div style="margin-bottom:20px;padding-bottom:20px;border-bottom:1px solid #eee">
+    <div style="font-size:11px;font-weight:700;color:#C8860A;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">ราคาโปรโมชั่น</div>
+    ${pricingHTML}
+  </div>
+
+  ${section('คำอธิบาย', c.desc||'')}
+  ${section('รายการที่รวมอยู่ในโปร', c.includes||'')}
+  ${section('เงื่อนไขและข้อกำหนด', c.terms||'')}
+  ${channels ? section('ช่องทางโปรโมต', channels) : ''}
+
+  <!-- FOOTER -->
+  <div style="margin-top:36px;padding-top:20px;border-top:2px solid #C8860A;display:flex;justify-content:space-between;align-items:flex-end">
+    <div style="font-size:12px;color:#999">
+      สร้างโดย: ${c.createdBy||'—'} · ${c.createdAt?fmtDate(c.createdAt):''}
+      ${approvedEntry?`<br>อนุมัติโดย: ${approvedEntry.by} · ${fmtDate(approvedEntry.at)}`:''}
+    </div>
+    ${approvedEntry?`<div style="text-align:right"><div style="font-size:10px;color:#999;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px">ได้รับการอนุมัติแล้ว</div><div style="font-size:20px;font-weight:800;color:#C8860A">✅ Approved</div></div>`:'<div style="font-size:11px;color:#bbb;font-style:italic">ยังไม่ได้รับการอนุมัติ</div>'}
+  </div>
+  </body></html>`;
+
+  const win = window.open('', '_blank');
+  win.document.write(html);
+  win.document.close();
+}
+
+// ====== ACTIONS ======
+function quickApprove(id){const c=campaigns.find(x=>x.id===id);if(!c)return;c.status='approved';c.updatedAt=new Date().toISOString();c.history=[...(c.history||[]),{action:'อนุมัติแล้ว',by:'Owner',at:c.updatedAt}];save();renderAll();showToast('✅ อนุมัติแล้ว','success');}
+function approveD(id){const c=campaigns.find(x=>x.id===id);if(!c)return;const cmt=document.getElementById('apCmt')?.value.trim()||'';c.status='approved';c.updatedAt=new Date().toISOString();c.history=[...(c.history||[]),{action:'อนุมัติแล้ว',by:'Owner',at:c.updatedAt,comment:cmt}];save();closeModal('detailModal');renderAll();showToast('✅ อนุมัติแล้ว','success');}
+function rejectD(id){const c=campaigns.find(x=>x.id===id);if(!c)return;const cmt=document.getElementById('apCmt')?.value.trim()||'';c.status='rejected';c.updatedAt=new Date().toISOString();c.history=[...(c.history||[]),{action:'ส่งกลับแก้ไข',by:'Owner',at:c.updatedAt,comment:cmt}];save();closeModal('detailModal');renderAll();showToast('ส่งกลับให้แก้ไข','error');}
+function quickSubmit(id){const c=campaigns.find(x=>x.id===id);if(!c)return;c.status='pending';c.updatedAt=new Date().toISOString();c.history=[...(c.history||[]),{action:'ส่งขออนุมัติ',by:'Manager',at:c.updatedAt}];save();renderAll();showToast('📤 ส่งขออนุมัติแล้ว');}
+function doStatus(id,st,msg){const c=campaigns.find(x=>x.id===id);if(!c)return;c.status=st;c.updatedAt=new Date().toISOString();c.history=[...(c.history||[]),{action:msg,by:currentRole==='owner'?'Owner':'Manager',at:c.updatedAt}];save();renderAll();showToast(msg+' ✅');}
+function delCamp(id){if(!confirm('ต้องการลบแคมเปญนี้?'))return;campaigns=campaigns.filter(c=>c.id!==id);save();renderAll();showToast('ลบแล้ว');}
+
+// ====== UTILS ======
+function setFilter(f,btn){currentFilter=f;document.querySelectorAll('.fchip').forEach(el=>el.classList.remove('active'));if(btn)btn.classList.add('active');renderAll();}
+function setSearch(v){currentSearch=v;renderList();}
+function statusInfo(s){return {draft:{label:'Draft',cls:'s-draft2'},pending:{label:'รออนุมัติ',cls:'s-pending2'},approved:{label:'อนุมัติแล้ว',cls:'s-approved2'},live:{label:'Live',cls:'s-live2'},expired:{label:'หมดอายุ',cls:'s-expired2'},rejected:{label:'ปฏิเสธ',cls:'s-rejected2'}}[s]||{label:s,cls:''};}
+function fmtDate(d){if(!d)return'—';return new Date(d).toLocaleDateString('th-TH',{day:'numeric',month:'short',year:'numeric'});}
+function fmtDT(d){if(!d)return'—';const dt=new Date(d);return dt.toLocaleDateString('th-TH',{day:'numeric',month:'short'})+' '+dt.toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'});}
+function closeModal(id){document.getElementById(id).style.display='none';}
+function closeIfOverlay(e,id){if(e.target===document.getElementById(id))closeModal(id);}
+function toggleChip(e,el){e.preventDefault();el.classList.toggle('checked');el.querySelector('input').checked=el.classList.contains('checked');}
+function showToast(msg,type='default'){const t=document.getElementById('toast');t.textContent=msg;t.className=`toast show${type!=='default'?' '+type:''}`;clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),3000);}
+
+document.getElementById('f_promo')?.addEventListener('input',calcD);
+document.getElementById('f_orig')?.addEventListener('input',calcD);
+function calcD(){const o=parseFloat(document.getElementById('f_orig').value),p=parseFloat(document.getElementById('f_promo').value);document.getElementById('f_disc').value=(o&&p&&o>0)?Math.round((1-p/o)*100):'';}
+
+function onTypeChange(val) {
+  const isRoom = val === 'room' || val === 'package';
+  document.getElementById('roomPickSection').style.display = isRoom ? 'block' : 'none';
+  document.getElementById('genericPriceSection').style.display = isRoom ? 'none' : 'block';
+  if (isRoom) buildRoomGrid();
+}
+
+function buildRoomGrid() {
+  const container = document.getElementById('roomGridContainer');
+  if (container.dataset.built) return;
+  container.dataset.built = '1';
+  const groups = [
+    { label: '🏡 Cottage', rooms: ROOMS.filter(r => r.g === 'cottage') },
+    { label: '🏘️ Bungalow', rooms: ROOMS.filter(r => r.g === 'bungalow') },
+  ];
+  let html = '';
+  groups.forEach(grp => {
+    html += `<div class="rg-group-label">${grp.label}</div>`;
+    grp.rooms.forEach(r => {
+      const tagHtml = r.tags.map(t => `<span class="rtag ${t.cls}">${t.label}</span>`).join('');
+      html += `<div class="rg-room" id="rrm_${r.id}">
+        <div class="rg-room-header">
+          <label class="rg-cblabel">
+            <input type="checkbox" id="rc_${r.id}" onchange="onRoomCheck('${r.id}',this.checked)">
+            <span class="rg-rid">${r.id}</span>
+            <span class="rg-rname">${r.name}</span>
+          </label>
+          <div class="rg-tags">${tagHtml}</div>
+        </div>
+        <div class="rg-prices" id="rrp_${r.id}">
+          <div class="rg-mode-row">
+            <span class="rg-mode-label">จุดเด่นโปร:</span>
+            <div class="rg-mode-opts">
+              <button type="button" class="rg-mode-opt active" id="rm_pct_${r.id}" onclick="setRoomMode('${r.id}','pct')">🏷️ % ส่วนลด</button>
+              <button type="button" class="rg-mode-opt" id="rm_price_${r.id}" onclick="setRoomMode('${r.id}','price')">💰 ราคาโปร</button>
+            </div>
+          </div>
+          <div class="rg-price-row">
+            <div class="rg-field">
+              <span class="rg-field-label">ราคาปกติ</span>
+              <div class="rg-sinput-wrap">
+                <input type="number" class="rg-pinput" id="rr_${r.id}" value="${r.lowMin}" oninput="calcRoomPromo('${r.id}')">
+                <span class="rg-unit">บาท</span>
+              </div>
+            </div>
+            <div class="rg-field" id="rf_pct_${r.id}">
+              <span class="rg-field-label">ส่วนลด</span>
+              <div class="rg-sinput-wrap">
+                <input type="number" class="rg-pinput" id="rd_${r.id}" placeholder="0" min="0" max="99" oninput="calcRoomPromo('${r.id}')">
+                <span class="rg-unit">%</span>
+              </div>
+            </div>
+            <div class="rg-field" id="rf_price_${r.id}" style="display:none">
+              <span class="rg-field-label">ราคาโปร</span>
+              <div class="rg-sinput-wrap">
+                <input type="number" class="rg-pinput" id="rp_${r.id}" placeholder="0" oninput="calcRoomPromo('${r.id}')">
+                <span class="rg-unit">บาท</span>
+              </div>
+            </div>
+            <div class="rg-result-badge" id="rb_${r.id}">
+              <span class="rb-main">—</span>
+              <span class="rb-sub">ราคาโปร</span>
+            </div>
+          </div>
+          ${r.note ? `<div class="rg-note">📌 ${r.note}</div>` : ''}
+        </div>
+      </div>`;
+    });
+  });
+  container.innerHTML = html;
+}
+
+function setRoomMode(id, mode) {
+  if (!document.getElementById(`rm_pct_${id}`)) return;
+  document.getElementById(`rm_pct_${id}`).classList.toggle('active', mode === 'pct');
+  document.getElementById(`rm_price_${id}`).classList.toggle('active', mode === 'price');
+  document.getElementById(`rf_pct_${id}`).style.display = mode === 'pct' ? '' : 'none';
+  document.getElementById(`rf_price_${id}`).style.display = mode === 'price' ? '' : 'none';
+  const badge = document.getElementById(`rb_${id}`);
+  badge.querySelector('.rb-sub').textContent = mode === 'pct' ? 'ราคาโปร' : 'ส่วนลด';
+  calcRoomPromo(id);
+}
+
+function getRoomMode(id) {
+  return document.getElementById(`rm_pct_${id}`)?.classList.contains('active') ? 'pct' : 'price';
+}
+
+function onRoomCheck(id, checked) {
+  document.getElementById(`rrm_${id}`).classList.toggle('rg-active', checked);
+}
+
+function calcRoomPromo(id) {
+  const mode = getRoomMode(id);
+  const rack = parseFloat(document.getElementById(`rr_${id}`)?.value) || 0;
+  const badge = document.getElementById(`rb_${id}`);
+  if (!badge) return;
+  if (mode === 'pct') {
+    const disc = parseFloat(document.getElementById(`rd_${id}`)?.value) || 0;
+    if (rack > 0 && disc > 0 && disc < 100) {
+      const promo = Math.round(rack * (1 - disc / 100));
+      badge.querySelector('.rb-main').textContent = `฿${promo.toLocaleString()}`;
+      badge.querySelector('.rb-sub').textContent = 'ราคาโปร';
+      badge.classList.add('has-val');
+    } else { _clearBadge(badge, 'ราคาโปร'); }
+  } else {
+    const promo = parseFloat(document.getElementById(`rp_${id}`)?.value) || 0;
+    if (rack > 0 && promo > 0 && promo < rack) {
+      const disc = Math.round((1 - promo / rack) * 100);
+      badge.querySelector('.rb-main').textContent = `ลด ${disc}%`;
+      badge.querySelector('.rb-sub').textContent = `฿${promo.toLocaleString()}/คืน`;
+      badge.classList.add('has-val');
+    } else { _clearBadge(badge, 'ส่วนลด'); }
+  }
+}
+
+function _clearBadge(badge, sub) {
+  badge.querySelector('.rb-main').textContent = '—';
+  badge.querySelector('.rb-sub').textContent = sub;
+  badge.classList.remove('has-val');
+}
+
+function getRoomPricing() {
+  return ROOMS.filter(r => document.getElementById(`rc_${r.id}`)?.checked).map(r => {
+    const mode = getRoomMode(r.id);
+    const rack = parseFloat(document.getElementById(`rr_${r.id}`)?.value) || null;
+    const disc = mode === 'pct' ? (parseFloat(document.getElementById(`rd_${r.id}`)?.value) || null) : null;
+    const promoRaw = mode === 'price' ? (parseFloat(document.getElementById(`rp_${r.id}`)?.value) || null) : null;
+    const promo = disc && rack ? Math.round(rack * (1 - disc / 100)) : promoRaw;
+    const discount = disc || (rack && promo ? Math.round((1 - promo / rack) * 100) : null);
+    return { id: r.id, mode, rack, discount, promo };
+  });
+}
+
+function clearRoomGrid() {
+  ROOMS.forEach(r => {
+    const cb = document.getElementById(`rc_${r.id}`);
+    if (cb) { cb.checked = false; onRoomCheck(r.id, false); }
+    const rrEl = document.getElementById(`rr_${r.id}`);
+    if (rrEl) rrEl.value = r.lowMin || '';
+    const rdEl = document.getElementById(`rd_${r.id}`);
+    if (rdEl) rdEl.value = '';
+    const rpEl = document.getElementById(`rp_${r.id}`);
+    if (rpEl) rpEl.value = '';
+    const badge = document.getElementById(`rb_${r.id}`);
+    if (badge) _clearBadge(badge, 'ราคาโปร');
+    setRoomMode(r.id, 'pct');
+  });
+}
+
+function fillRoomGrid(rooms) {
+  if (!rooms || !rooms.length) return;
+  rooms.forEach(rd => {
+    const cb = document.getElementById(`rc_${rd.id}`);
+    if (!cb) return;
+    cb.checked = true;
+    onRoomCheck(rd.id, true);
+    setRoomMode(rd.id, rd.mode || 'pct');
+    const rrEl = document.getElementById(`rr_${rd.id}`);
+    if (rrEl && rd.rack) rrEl.value = rd.rack;
+    if (rd.mode === 'price') {
+      const rpEl = document.getElementById(`rp_${rd.id}`);
+      if (rpEl && rd.promo) rpEl.value = rd.promo;
+    } else {
+      const rdEl = document.getElementById(`rd_${rd.id}`);
+      if (rdEl && rd.discount) rdEl.value = rd.discount;
+    }
+    calcRoomPromo(rd.id);
+  });
+}
+
+// ====== DEMO DATA ======
+if (!campaigns.length) {
+  campaigns=[
+    {id:'d1',name:'Rainy Season Escape 2026',type:'room',tag:'Green Season',startDate:'2026-06-01',endDate:'2026-09-30',originalPrice:'3500',promoPrice:'2450',discount:'30',desc:'โปรโมชั่นช่วงหน้าฝน ลด 30% สำหรับแขกที่จองตรง',includes:'- ห้อง C1 หรือ C3 1 คืน\n- อาหารเช้า 2 ท่าน\n- Welcome Drink',terms:'- Direct Booking เท่านั้น\n- ไม่สามารถ Refund ได้',channels:['instagram','facebook','direct'],notes:'',status:'live',createdBy:'Manager',createdAt:'2026-05-20T09:00:00Z',updatedAt:'2026-05-22T14:00:00Z',history:[{action:'สร้าง Draft',by:'Manager',at:'2026-05-20T09:00:00Z'},{action:'อนุมัติแล้ว',by:'Owner',at:'2026-05-21T15:00:00Z',comment:'ดีมาก'},{action:'เริ่ม Live',by:'Owner',at:'2026-05-22T14:00:00Z'}]},
+    {id:'d2',name:'Sunset Dinner Set — July Special',type:'fb',tag:'',startDate:'2026-07-01',endDate:'2026-07-31',originalPrice:'980',promoPrice:'750',discount:'23',desc:'Dinner Set 2 ท่านบนดาดฟ้าชมพระอาทิตย์ตก',includes:'- Starter 2 จาน\n- Main Course 2 จาน\n- Welcome Cocktail 2 แก้ว',terms:'- จองล่วงหน้า 1 วัน\n- รับได้ 4 โต๊ะต่อคืน',channels:['instagram','facebook','line'],notes:'ใช้ภาพ sunset จาก deck จริง',status:'pending',createdBy:'Manager',createdAt:'2026-06-10T11:00:00Z',updatedAt:'2026-06-12T09:00:00Z',history:[{action:'สร้าง Draft',by:'Manager',at:'2026-06-10T11:00:00Z'},{action:'ส่งขออนุมัติ',by:'Manager',at:'2026-06-12T09:00:00Z'}]},
+    {id:'d3',name:'Anniversary Package — Stay 3 Pay 2',type:'package',tag:'Direct Only',startDate:'2026-08-01',endDate:'2026-10-31',originalPrice:'10500',promoPrice:'7000',discount:'33',desc:'พักครบ 3 คืน จ่ายแค่ 2 คืน สำหรับ Couple',includes:'- ห้อง C1 3 คืน (คิดเงิน 2 คืน)\n- อาหารเช้า 3 วัน\n- Romantic Dinner 1 มื้อ',terms:'- Direct Booking เท่านั้น\n- จองล่วงหน้า 14 วัน',channels:['instagram','facebook','direct'],notes:'',status:'draft',createdBy:'Owner',createdAt:'2026-06-13T08:00:00Z',updatedAt:'2026-06-13T08:00:00Z',history:[{action:'สร้าง Draft',by:'Owner',at:'2026-06-13T08:00:00Z'}]},
+  ];
+  save();
+}
+</script>
+</body>
+</html>
