@@ -121,6 +121,8 @@
   .t-room { background:#E8F0FF; color:#2C5CC5; }
   .t-fb { background:#FFF0E0; color:#C05A00; }
   .t-package { background:#F0E8FF; color:#6C2CC5; }
+  .t-longstay { background:#E8F5FF; color:#0A5FA8; }
+  .t-freeform { background:#F5F5F5; color:#555; }
   .sbadge { display:inline-flex; align-items:center; gap:5px; font-size:11px; font-weight:600; padding:4px 10px; border-radius:20px; text-transform:uppercase; letter-spacing:0.5px; white-space:nowrap; }
   .sbadge::before { content:''; width:6px; height:6px; border-radius:50%; background:currentColor; flex-shrink:0; }
   .s-draft2 { background:#f0f0f0; color:#666; }
@@ -470,7 +472,7 @@
           <div class="fgrid"><div class="fgroup"><label>ชื่อแคมเปญ <span class="req">*</span></label><input type="text" id="f_name" placeholder="เช่น Rainy Season Special 2026"></div></div>
           <div class="fgrid fgrid-2" style="margin-top:14px">
             <div class="fgroup"><label>ประเภทแคมเปญ <span class="req">*</span></label>
-              <select id="f_type" onchange="onTypeChange(this.value)"><option value="">-- เลือกประเภท --</option><option value="room">🏠 โปรโมชั่นห้องพัก</option><option value="fb">🍽️ ร้านอาหาร & บาร์</option><option value="package">📦 Package (ห้อง + อาหาร)</option></select>
+              <select id="f_type" onchange="onTypeChange(this.value)"><option value="">-- เลือกประเภท --</option><option value="room">🏠 โปรโมชั่นห้องพัก</option><option value="fb">🍽️ ร้านอาหาร & บาร์</option><option value="package">📦 Package (ห้อง + อาหาร)</option><option value="longstay">🌙 Long Stay (รายสัปดาห์/เดือน)</option><option value="freeform">✏️ กำหนดเอง</option></select>
             </div>
             <div class="fgroup"><label>แท็ก</label><input type="text" id="f_tag" placeholder="เช่น High Season, Direct Only"></div>
           </div>
@@ -507,6 +509,41 @@
             <div class="fgroup"><label>ราคาโปรโมชั่น (THB)</label><input type="number" id="f_promo" placeholder="ราคาที่ขาย"></div>
             <div class="fgroup"><label>ส่วนลด (%)</label><input type="number" id="f_disc" placeholder="อัตโนมัติ" readonly style="background:#f5f5f5"></div>
           </div>
+        </div>
+
+        <div class="fsection" id="longstaySection" style="display:none">
+          <div class="fsection-title">🌙 Long Stay — ระยะเวลาและราคา</div>
+          <div class="fgrid fgrid-2" style="margin-bottom:14px">
+            <div class="fgroup">
+              <label>ระยะเวลาพัก <span class="req">*</span></label>
+              <select id="ls_dur" onchange="onLsDurChange(this.value)">
+                <option value="">-- เลือก --</option>
+                <option value="7">7 คืน (1 สัปดาห์)</option>
+                <option value="14">14 คืน (2 สัปดาห์)</option>
+                <option value="30">30 คืน (1 เดือน)</option>
+                <option value="custom">กำหนดเอง</option>
+              </select>
+            </div>
+            <div class="fgroup" id="ls_custom_wrap" style="display:none">
+              <label>จำนวนคืน</label>
+              <input type="number" id="ls_nights" placeholder="เช่น 21" min="1">
+            </div>
+          </div>
+          <div class="fgroup" style="margin-bottom:14px">
+            <label>ห้องที่รวมในโปร</label>
+            <div id="lsRoomPicker" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:6px"></div>
+          </div>
+          <div class="fgrid fgrid-3">
+            <div class="fgroup"><label>ราคาปกติรวม (THB)</label><input type="number" id="ls_orig" placeholder="ราคาเต็มสำหรับระยะนี้" oninput="calcLsDisc()"></div>
+            <div class="fgroup"><label>ราคาโปรรวม (THB)</label><input type="number" id="ls_promo" placeholder="ราคาที่คิดจริง" oninput="calcLsDisc()"></div>
+            <div class="fgroup"><label>ส่วนลด (%)</label><input type="number" id="ls_disc" placeholder="อัตโนมัติ" readonly style="background:#f5f5f5"></div>
+          </div>
+        </div>
+
+        <div class="fsection" id="freeformSection" style="display:none">
+          <div class="fsection-title">✏️ โครงสร้างราคา (กำหนดเอง)</div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:10px">อธิบายโครงสร้างราคาได้อิสระ เช่น ราคาพิเศษสำหรับกรุ๊ป, แพ็คเกจเฉพาะกิจ, ราคาเหมาต่างๆ</div>
+          <div class="fgroup"><textarea id="ff_pricing" rows="5" placeholder="เช่น&#10;- ห้อง C1: เหมาสัปดาห์ 5,000 บาท (ปกติ 15,000)&#10;- ห้อง B4: เหมาเดือน 18,000 บาท&#10;- ราคานี้รวมอาหารเช้า 2 ท่านทุกวัน"></textarea></div>
         </div>
       </div>
       <div id="ftab1" style="display:none">
@@ -812,8 +849,8 @@ function renderList() {
   if (!list.length) { el.innerHTML='<div class="empty-state"><div class="empty-icon">📭</div><h3>ไม่พบแคมเปญ</h3><p>ลองเปลี่ยน Filter หรือสร้างใหม่</p></div>'; return; }
 
   el.innerHTML = list.map(c => {
-    const tl = {room:'🏠 ห้องพัก',fb:'🍽️ F&B',package:'📦 Package'}[c.type]||c.type;
-    const tc = {room:'t-room',fb:'t-fb',package:'t-package'}[c.type]||'';
+    const tl = {room:'🏠 ห้องพัก',fb:'🍽️ F&B',package:'📦 Package',longstay:'🌙 Long Stay',freeform:'✏️ กำหนดเอง'}[c.type]||c.type;
+    const tc = {room:'t-room',fb:'t-fb',package:'t-package',longstay:'t-longstay',freeform:'t-freeform'}[c.type]||'';
     const period = c.startDate&&c.endDate?`${fmtDate(c.startDate)} – ${fmtDate(c.endDate)}`:'—';
     const si = statusInfo(c.status);
     let acts = `<button class="btn-icon btn-sm" onclick="event.stopPropagation();openDetail('${c.id}')">👁️</button>`;
@@ -1013,7 +1050,11 @@ function openEdit(id) {
 }
 
 function clearForm() {
-  ['f_name','f_type','f_tag','f_start','f_end','f_launch','f_approve_by','f_orig','f_promo','f_disc','f_desc','f_includes','f_terms','f_notes'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  ['f_name','f_type','f_tag','f_start','f_end','f_launch','f_approve_by','f_orig','f_promo','f_disc','f_desc','f_includes','f_terms','f_notes','ls_dur','ls_nights','ls_orig','ls_promo','ls_disc','ff_pricing'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  clearLsRooms();
+  document.getElementById('ls_custom_wrap').style.display='none';
+  ['roomPickSection','longstaySection','freeformSection'].forEach(id=>document.getElementById(id).style.display='none');
+  document.getElementById('genericPriceSection').style.display='block';
   document.querySelectorAll('.cchip').forEach(el=>{el.classList.remove('checked');el.querySelector('input').checked=false;});
   document.getElementById('roomPickSection').style.display='none';
   document.getElementById('genericPriceSection').style.display='block';
@@ -1033,6 +1074,15 @@ function fillForm(c) {
   document.getElementById('f_orig').value=c.originalPrice||'';
   document.getElementById('f_promo').value=c.promoPrice||'';
   document.getElementById('f_disc').value=c.discount||'';
+  if(c.type==='longstay'){
+    if(c.lsDur){document.getElementById('ls_dur').value=c.lsDur;onLsDurChange(c.lsDur);}
+    if(c.lsNights)document.getElementById('ls_nights').value=c.lsNights;
+    if(c.lsRooms&&c.lsRooms.length)fillLsRooms(c.lsRooms);
+    if(c.lsOrig)document.getElementById('ls_orig').value=c.lsOrig;
+    if(c.lsPromo)document.getElementById('ls_promo').value=c.lsPromo;
+    if(c.lsDisc)document.getElementById('ls_disc').value=c.lsDisc;
+  }
+  if(c.type==='freeform'&&c.ffPricing)document.getElementById('ff_pricing').value=c.ffPricing;
   document.getElementById('f_desc').value=c.desc||'';
   document.getElementById('f_includes').value=c.includes||'';
   document.getElementById('f_terms').value=c.terms||'';
@@ -1042,11 +1092,15 @@ function fillForm(c) {
 
 function getForm() {
   const chs=[];document.querySelectorAll('.cchip.checked input').forEach(el=>chs.push(el.value));
-  return {name:document.getElementById('f_name').value.trim(),type:document.getElementById('f_type').value,tag:document.getElementById('f_tag').value.trim(),
+  const type = document.getElementById('f_type').value;
+  return {name:document.getElementById('f_name').value.trim(),type,tag:document.getElementById('f_tag').value.trim(),
     startDate:document.getElementById('f_start').value,endDate:document.getElementById('f_end').value,
     launchDate:document.getElementById('f_launch').value,approveBy:document.getElementById('f_approve_by').value,
     originalPrice:document.getElementById('f_orig').value,promoPrice:document.getElementById('f_promo').value,discount:document.getElementById('f_disc').value,
     rooms:getRoomPricing(),
+    lsDur:document.getElementById('ls_dur')?.value||'',lsNights:document.getElementById('ls_nights')?.value||'',
+    lsRooms:getLsRooms(),lsOrig:document.getElementById('ls_orig')?.value||'',lsPromo:document.getElementById('ls_promo')?.value||'',lsDisc:document.getElementById('ls_disc')?.value||'',
+    ffPricing:document.getElementById('ff_pricing')?.value.trim()||'',
     desc:document.getElementById('f_desc').value.trim(),includes:document.getElementById('f_includes').value.trim(),
     terms:document.getElementById('f_terms').value.trim(),notes:document.getElementById('f_notes').value.trim(),channels:chs};
 }
@@ -1073,11 +1127,14 @@ function saveCampaign(target) {
 // ====== DETAIL ======
 function openDetail(id) {
   const c=campaigns.find(x=>x.id===id);if(!c)return;
-  const tl={room:'🏠 ห้องพัก',fb:'🍽️ ร้านอาหาร',package:'📦 Package'}[c.type]||c.type;
-  const tc={room:'t-room',fb:'t-fb',package:'t-package'}[c.type]||'';
+  const tl={room:'🏠 ห้องพัก',fb:'🍽️ ร้านอาหาร',package:'📦 Package',longstay:'🌙 Long Stay',freeform:'✏️ กำหนดเอง'}[c.type]||c.type;
+  const tc={room:'t-room',fb:'t-fb',package:'t-package',longstay:'t-longstay',freeform:'t-freeform'}[c.type]||'';
   const si=statusInfo(c.status);
   const disc=c.originalPrice&&c.promoPrice?Math.round((1-c.promoPrice/c.originalPrice)*100)+'%':c.discount?c.discount+'%':'—';
   const ph=c.promoPrice?`฿${Number(c.promoPrice).toLocaleString()} <s style="color:var(--muted);font-size:12px">฿${Number(c.originalPrice||0).toLocaleString()}</s> <span style="color:var(--success);font-size:12px">(ลด ${disc})</span>`:c.originalPrice?`฿${Number(c.originalPrice).toLocaleString()}`:'—';
+  const lsDurLabel={'7':'7 คืน (1 สัปดาห์)','14':'14 คืน (2 สัปดาห์)','30':'30 คืน (1 เดือน)','custom':`${c.lsNights||'?'} คืน (กำหนดเอง)`}[c.lsDur]||c.lsDur||'';
+  const lsDisc=c.lsOrig&&c.lsPromo?Math.round((1-c.lsPromo/c.lsOrig)*100)+'%':c.lsDisc?c.lsDisc+'%':'—';
+  const lsPh=c.lsPromo?`฿${Number(c.lsPromo).toLocaleString()} <s style="color:var(--muted);font-size:12px">฿${Number(c.lsOrig||0).toLocaleString()}</s> <span style="color:var(--success);font-size:12px">(ลด ${lsDisc})</span>`:c.lsOrig?`฿${Number(c.lsOrig).toLocaleString()}`:'—';
   const chs=(c.channels||[]).map(ch=>({instagram:'📸',facebook:'📘',tiktok:'🎵',booking:'🏨',agoda:'🌐',direct:'💬',line:'💚'}[ch]||'')+' '+ch).join(' · ');
   let ap='';
   if(c.status==='pending'&&currentRole==='owner') ap=`<div class="approval-box"><div style="font-size:13px;font-weight:700;color:var(--warning);margin-bottom:10px">⚡ รออนุมัติจาก Owner</div><div class="fgroup" style="margin-bottom:10px"><label>หมายเหตุ</label><textarea id="apCmt" style="min-height:60px" placeholder="ความคิดเห็น หรือสิ่งที่ต้องแก้ไข..."></textarea></div><div style="display:flex;gap:8px"><button class="btn-approve" onclick="approveD('${c.id}')">✅ อนุมัติ</button><button class="btn-reject" onclick="rejectD('${c.id}')">❌ ส่งกลับแก้ไข</button></div></div>`;
@@ -1101,7 +1158,13 @@ function openDetail(id) {
       <div class="di"><div class="dl">ช่วงเวลาโปรโมชั่น</div><div class="dv">${c.startDate?`${fmtDate(c.startDate)} – ${fmtDate(c.endDate)}`:'—'}</div></div>
       ${c.launchDate?`<div class="di"><div class="dl">📅 วัน Launch โปร</div><div class="dv">${fmtDate(c.launchDate)}</div></div>`:''}
       ${c.approveBy&&!urg?`<div class="di"><div class="dl">⚡ Approve ภายใน</div><div class="dv">${fmtDate(c.approveBy)}</div></div>`:''}
-      <div class="di"><div class="dl">ราคา</div><div class="dv">${ph}</div></div>
+      ${c.type!=='longstay'&&c.type!=='freeform'?`<div class="di"><div class="dl">ราคา</div><div class="dv">${ph}</div></div>`:''}
+      ${c.type==='longstay'?`
+        ${lsDurLabel?`<div class="di"><div class="dl">ระยะเวลาพัก</div><div class="dv">${lsDurLabel}</div></div>`:''}
+        ${c.lsRooms&&c.lsRooms.length?`<div class="di"><div class="dl">ห้องที่รวม</div><div class="dv">${c.lsRooms.join(', ')}</div></div>`:''}
+        <div class="di"><div class="dl">ราคา (เหมารวม)</div><div class="dv">${lsPh}</div></div>
+      `:''}
+      ${c.type==='freeform'&&c.ffPricing?`<div class="di full"><div class="dl">โครงสร้างราคา</div><div class="dv" style="white-space:pre-wrap">${c.ffPricing}</div></div>`:''}
       ${c.desc?`<div class="di full"><div class="dl">คำอธิบาย</div><div class="dv" style="white-space:pre-wrap">${c.desc}</div></div>`:''}
       ${c.includes?`<div class="di full"><div class="dl">รายการที่รวม</div><div class="dv" style="white-space:pre-wrap">${c.includes}</div></div>`:''}
       ${c.terms?`<div class="di full"><div class="dl">เงื่อนไข</div><div class="dv" style="white-space:pre-wrap;font-size:13px;color:var(--muted)">${c.terms}</div></div>`:''}
@@ -1257,9 +1320,71 @@ function calcD(){const o=parseFloat(document.getElementById('f_orig').value),p=p
 
 function onTypeChange(val) {
   const isRoom = val === 'room' || val === 'package';
+  const isLongstay = val === 'longstay';
+  const isFreeform = val === 'freeform';
   document.getElementById('roomPickSection').style.display = isRoom ? 'block' : 'none';
-  document.getElementById('genericPriceSection').style.display = isRoom ? 'none' : 'block';
+  document.getElementById('genericPriceSection').style.display = (!isRoom && !isLongstay && !isFreeform) ? 'block' : 'none';
+  document.getElementById('longstaySection').style.display = isLongstay ? 'block' : 'none';
+  document.getElementById('freeformSection').style.display = isFreeform ? 'block' : 'none';
   if (isRoom) buildRoomGrid();
+  if (isLongstay) buildLsRoomPicker();
+}
+
+function buildLsRoomPicker() {
+  const wrap = document.getElementById('lsRoomPicker');
+  if (wrap.dataset.built) return;
+  wrap.dataset.built = '1';
+  ROOMS.forEach(r => {
+    const lbl = document.createElement('label');
+    lbl.style.cssText = 'display:flex;align-items:center;gap:6px;padding:6px 12px;border:1.5px solid var(--border);border-radius:8px;cursor:pointer;font-size:13px;transition:all 0.15s;';
+    lbl.innerHTML = `<input type="checkbox" id="ls_rc_${r.id}" style="accent-color:var(--saffron)"> ${r.id} <span style="color:var(--muted);font-size:11px">${r.name}</span>`;
+    lbl.querySelector('input').addEventListener('change', function() {
+      lbl.style.borderColor = this.checked ? 'var(--saffron)' : 'var(--border)';
+      lbl.style.background = this.checked ? 'var(--saffron-pale)' : '';
+    });
+    wrap.appendChild(lbl);
+  });
+}
+
+function onLsDurChange(val) {
+  document.getElementById('ls_custom_wrap').style.display = val === 'custom' ? 'block' : 'none';
+}
+
+function calcLsDisc() {
+  const o = parseFloat(document.getElementById('ls_orig').value);
+  const p = parseFloat(document.getElementById('ls_promo').value);
+  document.getElementById('ls_disc').value = (o && p && o > 0) ? Math.round((1 - p / o) * 100) : '';
+}
+
+function getLsRooms() {
+  return ROOMS.filter(r => document.getElementById(`ls_rc_${r.id}`)?.checked).map(r => r.id);
+}
+
+function fillLsRooms(ids) {
+  if (!ids || !ids.length) return;
+  buildLsRoomPicker();
+  ids.forEach(id => {
+    const cb = document.getElementById(`ls_rc_${id}`);
+    if (cb) {
+      cb.checked = true;
+      const lbl = cb.closest('label');
+      if (lbl) { lbl.style.borderColor = 'var(--saffron)'; lbl.style.background = 'var(--saffron-pale)'; }
+    }
+  });
+}
+
+function clearLsRooms() {
+  ROOMS.forEach(r => {
+    const cb = document.getElementById(`ls_rc_${r.id}`);
+    if (cb) {
+      cb.checked = false;
+      const lbl = cb.closest('label');
+      if (lbl) { lbl.style.borderColor = 'var(--border)'; lbl.style.background = ''; }
+    }
+  });
+  const wrap = document.getElementById('lsRoomPicker');
+  if (wrap) wrap.dataset.built = '';
+  wrap.innerHTML = '';
 }
 
 function buildRoomGrid() {
