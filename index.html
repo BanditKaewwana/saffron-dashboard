@@ -452,11 +452,11 @@
 <div class="toast" id="toast"></div>
 
 <!-- FORM MODAL -->
-<div class="modal-overlay" id="formModal" style="display:none" onclick="closeIfOverlay(event,'formModal')">
+<div class="modal-overlay" id="formModal" style="display:none" onclick="safeCloseForm(event)">
   <div class="modal">
     <div class="modal-header">
       <span class="modal-title" id="formModalTitle">สร้างแคมเปญใหม่</span>
-      <button class="modal-close" onclick="closeModal('formModal')">✕</button>
+      <button class="modal-close" onclick="safeCloseForm()">✕</button>
     </div>
     <div class="modal-body">
       <div class="form-tabs">
@@ -537,7 +537,7 @@
       </div>
     </div>
     <div class="modal-footer">
-      <button class="btn-secondary" onclick="closeModal('formModal')">ยกเลิก</button>
+      <button class="btn-secondary" onclick="safeCloseForm()">ยกเลิก</button>
       <button class="btn-secondary btn-sm" onclick="saveCampaign('draft')">💾 บันทึก Draft</button>
       <button class="btn-primary" id="submitBtn" onclick="saveCampaign('pending')">📤 ส่งขออนุมัติ</button>
     </div>
@@ -907,6 +907,72 @@ function setRoomDisc(id, val) {
   renderPricing();
 }
 
+// ====== FORM DRAFT AUTO-SAVE ======
+const DRAFT_KEY = 'sos_form_draft';
+let draftTimer = null;
+
+function scheduleFormDraft() {
+  clearTimeout(draftTimer);
+  draftTimer = setTimeout(() => {
+    if (document.getElementById('formModal').style.display !== 'flex') return;
+    if (editingId) return; // don't auto-save edits, only new campaigns
+    try {
+      const data = getForm();
+      localStorage.setItem(DRAFT_KEY, JSON.stringify(data));
+    } catch(e) {}
+  }, 600);
+}
+
+function clearFormDraft() { localStorage.removeItem(DRAFT_KEY); }
+
+function hasDraft() { return !!localStorage.getItem(DRAFT_KEY); }
+
+function restoreFormDraft() {
+  try {
+    const d = JSON.parse(localStorage.getItem(DRAFT_KEY));
+    if (!d) return;
+    document.getElementById('f_name').value = d.name || '';
+    document.getElementById('f_tag').value = d.tag || '';
+    document.getElementById('f_start').value = d.startDate || '';
+    document.getElementById('f_end').value = d.endDate || '';
+    document.getElementById('f_launch').value = d.launchDate || '';
+    document.getElementById('f_approve_by').value = d.approveBy || '';
+    document.getElementById('f_orig').value = d.originalPrice || '';
+    document.getElementById('f_promo').value = d.promoPrice || '';
+    document.getElementById('f_desc').value = d.desc || '';
+    document.getElementById('f_includes').value = d.includes || '';
+    document.getElementById('f_terms').value = d.terms || '';
+    document.getElementById('f_notes').value = d.notes || '';
+    if (d.type) { document.getElementById('f_type').value = d.type; onTypeChange(d.type); }
+    if (d.rooms && d.rooms.length) fillRoomGrid(d.rooms);
+    (d.channels||[]).forEach(v => document.querySelectorAll('.cchip').forEach(el => {
+      if (el.querySelector('input').value === v) { el.classList.add('checked'); el.querySelector('input').checked = true; }
+    }));
+  } catch(e) {}
+}
+
+function safeCloseForm(e) {
+  if (e && e.target !== document.getElementById('formModal')) return;
+  const name = document.getElementById('f_name')?.value.trim();
+  const hasContent = name || document.getElementById('f_desc')?.value.trim();
+  if (hasContent && !editingId) {
+    // Auto-save draft silently and close
+    scheduleFormDraft();
+    clearTimeout(draftTimer);
+    try { localStorage.setItem(DRAFT_KEY, JSON.stringify(getForm())); } catch(e) {}
+    showToast('💾 บันทึก Draft ชั่วคราวไว้แล้ว — เปิดใหม่กู้คืนได้เลย');
+  }
+  closeModal('formModal');
+}
+
+// Prevent Escape from closing form modal
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape' && document.getElementById('formModal')?.style.display === 'flex') {
+    e.preventDefault(); e.stopPropagation();
+    safeCloseForm();
+  }
+});
+
 // ====== FORM ======
 function switchTab(i,btn) {
   [0,1,2].forEach(n=>document.getElementById('ftab'+n).style.display=n===i?'block':'none');
@@ -919,6 +985,23 @@ function openCreateModal() {
   clearForm(); switchTab(0,document.querySelectorAll('.ftab-btn')[0]);
   document.getElementById('submitBtn').textContent = currentRole==='owner'?'✅ บันทึก & อนุมัติเลย':'📤 ส่งขออนุมัติ';
   document.getElementById('formModal').style.display='flex';
+  // Restore draft if exists
+  if (hasDraft()) {
+    setTimeout(() => {
+      const banner = document.createElement('div');
+      banner.id = 'draftBanner';
+      banner.style.cssText = 'background:#FEF3C7;border:1px solid #FCD34D;border-radius:8px;padding:10px 14px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;font-size:13px;gap:10px';
+      banner.innerHTML = `<span>💾 พบข้อมูลที่กรอกค้างไว้ ต้องการกู้คืนไหม?</span>
+        <div style="display:flex;gap:6px">
+          <button onclick="restoreFormDraft();document.getElementById('draftBanner').remove()" style="background:var(--saffron);color:white;border:none;padding:5px 12px;border-radius:6px;cursor:pointer;font-family:inherit;font-weight:600;font-size:12px">กู้คืน</button>
+          <button onclick="clearFormDraft();document.getElementById('draftBanner').remove()" style="background:none;border:1px solid #ccc;padding:5px 10px;border-radius:6px;cursor:pointer;font-family:inherit;font-size:12px">เริ่มใหม่</button>
+        </div>`;
+      const body = document.querySelector('#ftab0');
+      body.prepend(banner);
+    }, 100);
+  }
+  // Auto-save on any input change
+  document.getElementById('formModal').addEventListener('input', scheduleFormDraft, { once: false });
 }
 
 function openEdit(id) {
@@ -984,7 +1067,7 @@ function saveCampaign(target) {
     campaigns.push({...d,id:'c'+Date.now(),status:st,createdBy:by,createdAt:now,updatedAt:now,history:[{action:act,by,at:now}]});
     showToast(act+' ✅');
   }
-  save();closeModal('formModal');renderAll();
+  clearFormDraft();save();closeModal('formModal');renderAll();
 }
 
 // ====== DETAIL ======
