@@ -319,6 +319,7 @@
     </div>
     <div class="header-right">
       <span class="role-badge" id="roleBadge"></span>
+      <button class="btn-icon" id="notifBtn" onclick="openNotifModal()" title="ตั้งค่าการแจ้งเตือน" style="font-size:18px;padding:4px 8px;background:none;border:none;cursor:pointer;opacity:0.6;transition:opacity 0.2s" onmouseenter="this.style.opacity=1" onmouseleave="this.style.opacity=0.6">🔔</button>
       <button class="btn-icon" id="syncBtn" onclick="openSyncModal()" title="Cloud Sync" style="font-size:18px;padding:4px 8px;background:none;border:none;cursor:pointer;opacity:0.6;transition:opacity 0.2s" onmouseenter="this.style.opacity=1" onmouseleave="this.style.opacity=0.6">☁️</button>
       <button class="btn-logout" onclick="logout()">ออกจากระบบ</button>
     </div>
@@ -637,8 +638,56 @@
   </div>
 </div>
 
+<!-- NOTIFICATION SETTINGS MODAL -->
+<div class="modal-overlay" id="notifModal" style="display:none" onclick="closeIfOverlay(event,'notifModal')">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-header">
+      <span class="modal-title">🔔 ตั้งค่าการแจ้งเตือนทาง Email</span>
+      <button class="modal-close" onclick="closeModal('notifModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="fsection">
+        <div class="fsection-title">EmailJS Config</div>
+        <div style="background:var(--sea-light);border-radius:8px;padding:12px 14px;font-size:12px;color:var(--sea);margin-bottom:14px;line-height:1.8">
+          <b>วิธีตั้งค่า (ฟรี 200 อีเมล/เดือน):</b><br>
+          1. สมัครที่ <b>emailjs.com</b> → Add Email Service (เลือก Gmail)<br>
+          2. สร้าง Email Template ที่มี variables: <code>{{to_email}}</code> <code>{{subject}}</code> <code>{{body}}</code><br>
+          3. ก็อปปี้ Public Key, Service ID, Template ID มาใส่ด้านล่าง
+        </div>
+        <div class="fgrid fgrid-2">
+          <div class="fgroup"><label>Public Key</label><input type="text" id="nf_pubkey" placeholder="เช่น AbCdEfGhIj..."></div>
+          <div class="fgroup"><label>Service ID</label><input type="text" id="nf_svcid" placeholder="เช่น service_xxxxxxx"></div>
+        </div>
+        <div class="fgroup" style="margin-top:12px"><label>Template ID</label><input type="text" id="nf_tmplid" placeholder="เช่น template_xxxxxxx"></div>
+      </div>
+      <div class="fsection">
+        <div class="fsection-title">อีเมลผู้รับ</div>
+        <div class="fgrid fgrid-2">
+          <div class="fgroup"><label>อีเมล Owner</label><input type="email" id="nf_owner_email" placeholder="owner@saffron.com"></div>
+          <div class="fgroup"><label>อีเมล Manager</label><input type="email" id="nf_mgr_email" placeholder="manager@saffron.com"></div>
+        </div>
+      </div>
+      <div class="fsection">
+        <div class="fsection-title">แจ้งเตือน Deadline</div>
+        <div class="fgrid fgrid-2">
+          <div class="fgroup">
+            <label>เตือนก่อน Approve Deadline (วัน)</label>
+            <input type="number" id="nf_deadline_days" value="2" min="1" max="14">
+          </div>
+        </div>
+      </div>
+      <div id="notifTestResult" style="display:none;padding:10px 14px;border-radius:8px;font-size:13px;margin-top:8px"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="testNotif()">📧 ทดสอบส่ง Email</button>
+      <button class="btn-primary" onclick="saveNotifConfig()">💾 บันทึก</button>
+    </div>
+  </div>
+</div>
+
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <script>
 // ====== ROOM DATA ======
 const ROOMS = [
@@ -777,6 +826,8 @@ function login(role) {
   document.getElementById('roleBadge').textContent = role === 'owner' ? '👑 Owner' : '📋 Manager';
   renderPricing();
   renderAll();
+  updateNotifBtnState();
+  setTimeout(checkDeadlineReminders, 2000);
   const n = campaigns.filter(c => c.status === 'pending').length;
   if (role === 'owner' && n > 0) showToast(`มี ${n} แคมเปญรออนุมัติ`, 'error');
 }
@@ -1122,6 +1173,7 @@ function saveCampaign(target) {
     showToast(act+' ✅');
   }
   clearFormDraft();save();closeModal('formModal');renderAll();
+  if(st==='pending'&&!editingId) notifSubmitted(campaigns[campaigns.length-1]);
 }
 
 // ====== DETAIL ======
@@ -1297,9 +1349,9 @@ function printCampaign(id) {
 
 // ====== ACTIONS ======
 function quickApprove(id){const c=campaigns.find(x=>x.id===id);if(!c)return;c.status='approved';c.updatedAt=new Date().toISOString();c.history=[...(c.history||[]),{action:'อนุมัติแล้ว',by:'Owner',at:c.updatedAt}];save();renderAll();showToast('✅ อนุมัติแล้ว','success');}
-function approveD(id){const c=campaigns.find(x=>x.id===id);if(!c)return;const cmt=document.getElementById('apCmt')?.value.trim()||'';c.status='approved';c.updatedAt=new Date().toISOString();c.history=[...(c.history||[]),{action:'อนุมัติแล้ว',by:'Owner',at:c.updatedAt,comment:cmt}];save();closeModal('detailModal');renderAll();showToast('✅ อนุมัติแล้ว','success');}
-function rejectD(id){const c=campaigns.find(x=>x.id===id);if(!c)return;const cmt=document.getElementById('apCmt')?.value.trim()||'';c.status='rejected';c.updatedAt=new Date().toISOString();c.history=[...(c.history||[]),{action:'ส่งกลับแก้ไข',by:'Owner',at:c.updatedAt,comment:cmt}];save();closeModal('detailModal');renderAll();showToast('ส่งกลับให้แก้ไข','error');}
-function quickSubmit(id){const c=campaigns.find(x=>x.id===id);if(!c)return;c.status='pending';c.updatedAt=new Date().toISOString();c.history=[...(c.history||[]),{action:'ส่งขออนุมัติ',by:'Manager',at:c.updatedAt}];save();renderAll();showToast('📤 ส่งขออนุมัติแล้ว');}
+function approveD(id){const c=campaigns.find(x=>x.id===id);if(!c)return;const cmt=document.getElementById('apCmt')?.value.trim()||'';c.status='approved';c.updatedAt=new Date().toISOString();c.history=[...(c.history||[]),{action:'อนุมัติแล้ว',by:'Owner',at:c.updatedAt,comment:cmt}];save();closeModal('detailModal');renderAll();showToast('✅ อนุมัติแล้ว','success');notifApproved(c);}
+function rejectD(id){const c=campaigns.find(x=>x.id===id);if(!c)return;const cmt=document.getElementById('apCmt')?.value.trim()||'';c.status='rejected';c.updatedAt=new Date().toISOString();c.history=[...(c.history||[]),{action:'ส่งกลับแก้ไข',by:'Owner',at:c.updatedAt,comment:cmt}];save();closeModal('detailModal');renderAll();showToast('ส่งกลับให้แก้ไข','error');notifRejected(c,cmt);}
+function quickSubmit(id){const c=campaigns.find(x=>x.id===id);if(!c)return;c.status='pending';c.updatedAt=new Date().toISOString();c.history=[...(c.history||[]),{action:'ส่งขออนุมัติ',by:'Manager',at:c.updatedAt}];save();renderAll();showToast('📤 ส่งขออนุมัติแล้ว');notifSubmitted(c);}
 function doStatus(id,st,msg){const c=campaigns.find(x=>x.id===id);if(!c)return;c.status=st;c.updatedAt=new Date().toISOString();c.history=[...(c.history||[]),{action:msg,by:currentRole==='owner'?'Owner':'Manager',at:c.updatedAt}];save();renderAll();showToast(msg+' ✅');}
 function delCamp(id){if(!confirm('ต้องการลบแคมเปญนี้?'))return;campaigns=campaigns.filter(c=>c.id!==id);save();renderAll();showToast('ลบแล้ว');}
 
@@ -1547,6 +1599,170 @@ function fillRoomGrid(rooms) {
       if (rdEl && rd.discount) rdEl.value = rd.discount;
     }
     calcRoomPromo(rd.id);
+  });
+}
+
+// ====== NOTIFICATION SYSTEM ======
+const NOTIF_KEY = 'sos_notif_config';
+const NOTIF_SENT_KEY = 'sos_notif_sent';
+
+function getNotifConfig() {
+  try { return JSON.parse(localStorage.getItem(NOTIF_KEY) || '{}'); } catch(e) { return {}; }
+}
+
+function saveNotifConfig() {
+  const cfg = {
+    publicKey: document.getElementById('nf_pubkey').value.trim(),
+    serviceId: document.getElementById('nf_svcid').value.trim(),
+    templateId: document.getElementById('nf_tmplid').value.trim(),
+    ownerEmail: document.getElementById('nf_owner_email').value.trim(),
+    managerEmail: document.getElementById('nf_mgr_email').value.trim(),
+    deadlineDays: parseInt(document.getElementById('nf_deadline_days').value) || 2,
+  };
+  if (!cfg.publicKey || !cfg.serviceId || !cfg.templateId) {
+    showToast('กรุณากรอก Public Key, Service ID และ Template ID', 'error'); return;
+  }
+  if (!cfg.ownerEmail || !cfg.managerEmail) {
+    showToast('กรุณากรอกอีเมล Owner และ Manager', 'error'); return;
+  }
+  localStorage.setItem(NOTIF_KEY, JSON.stringify(cfg));
+  emailjs.init(cfg.publicKey);
+  closeModal('notifModal');
+  showToast('💾 บันทึกการตั้งค่าแจ้งเตือนแล้ว ✅', 'success');
+  updateNotifBtnState();
+}
+
+function openNotifModal() {
+  const cfg = getNotifConfig();
+  document.getElementById('nf_pubkey').value = cfg.publicKey || '';
+  document.getElementById('nf_svcid').value = cfg.serviceId || '';
+  document.getElementById('nf_tmplid').value = cfg.templateId || '';
+  document.getElementById('nf_owner_email').value = cfg.ownerEmail || '';
+  document.getElementById('nf_mgr_email').value = cfg.managerEmail || '';
+  document.getElementById('nf_deadline_days').value = cfg.deadlineDays || 2;
+  document.getElementById('notifTestResult').style.display = 'none';
+  document.getElementById('notifModal').style.display = 'flex';
+}
+
+function updateNotifBtnState() {
+  const cfg = getNotifConfig();
+  const btn = document.getElementById('notifBtn');
+  if (!btn) return;
+  const ready = cfg.publicKey && cfg.serviceId && cfg.templateId && cfg.ownerEmail && cfg.managerEmail;
+  btn.title = ready ? 'แจ้งเตือนทาง Email ✅' : 'ตั้งค่าการแจ้งเตือน (ยังไม่ได้ตั้งค่า)';
+  btn.style.opacity = ready ? '0.9' : '0.4';
+}
+
+async function sendNotif(toEmail, toName, subject, bodyLines) {
+  const cfg = getNotifConfig();
+  if (!cfg.publicKey || !cfg.serviceId || !cfg.templateId) return;
+  try {
+    emailjs.init(cfg.publicKey);
+    await emailjs.send(cfg.serviceId, cfg.templateId, {
+      to_email: toEmail,
+      to_name: toName,
+      subject: subject,
+      body: bodyLines.join('\n'),
+    });
+  } catch(e) { console.warn('EmailJS error:', e); }
+}
+
+function notifSubmitted(campaign) {
+  const cfg = getNotifConfig();
+  if (!cfg.ownerEmail) return;
+  const typeLabel = {room:'ห้องพัก',fb:'ร้านอาหาร',package:'Package',longstay:'Long Stay',freeform:'กำหนดเอง'}[campaign.type]||campaign.type;
+  sendNotif(cfg.ownerEmail, 'Owner', `[Saffron Dashboard] ขออนุมัติแคมเปญ: ${campaign.name}`, [
+    `📤 Manager ส่งขออนุมัติแคมเปญใหม่`,
+    ``,
+    `ชื่อแคมเปญ: ${campaign.name}`,
+    `ประเภท: ${typeLabel}`,
+    `ช่วงเวลา: ${campaign.startDate||'—'} ถึง ${campaign.endDate||'—'}`,
+    campaign.approveBy ? `⚡ Approve ภายใน: ${campaign.approveBy}` : '',
+    ``,
+    `กรุณาเปิด Dashboard เพื่อตรวจสอบและอนุมัติ`,
+  ]);
+}
+
+function notifApproved(campaign) {
+  const cfg = getNotifConfig();
+  if (!cfg.managerEmail) return;
+  sendNotif(cfg.managerEmail, 'Manager', `[Saffron Dashboard] ✅ อนุมัติแล้ว: ${campaign.name}`, [
+    `✅ Owner อนุมัติแคมเปญแล้ว`,
+    ``,
+    `ชื่อแคมเปญ: ${campaign.name}`,
+    `ช่วงเวลา: ${campaign.startDate||'—'} ถึง ${campaign.endDate||'—'}`,
+    campaign.launchDate ? `📅 วัน Launch: ${campaign.launchDate}` : '',
+    ``,
+    `สามารถเตรียม Content และ Launch ได้เลย`,
+  ]);
+}
+
+function notifRejected(campaign, comment) {
+  const cfg = getNotifConfig();
+  if (!cfg.managerEmail) return;
+  sendNotif(cfg.managerEmail, 'Manager', `[Saffron Dashboard] ↩️ ส่งกลับแก้ไข: ${campaign.name}`, [
+    `↩️ Owner ส่งกลับให้แก้ไขแคมเปญ`,
+    ``,
+    `ชื่อแคมเปญ: ${campaign.name}`,
+    comment ? `หมายเหตุจาก Owner: "${comment}"` : '',
+    ``,
+    `กรุณาเปิด Dashboard เพื่อแก้ไขและส่งใหม่`,
+  ]);
+}
+
+async function testNotif() {
+  const cfg = {
+    publicKey: document.getElementById('nf_pubkey').value.trim(),
+    serviceId: document.getElementById('nf_svcid').value.trim(),
+    templateId: document.getElementById('nf_tmplid').value.trim(),
+    ownerEmail: document.getElementById('nf_owner_email').value.trim(),
+  };
+  const res = document.getElementById('notifTestResult');
+  res.style.display = 'block';
+  res.style.background = 'var(--warning-bg)';
+  res.style.color = 'var(--warning)';
+  res.textContent = '⏳ กำลังส่งทดสอบ...';
+  if (!cfg.publicKey || !cfg.serviceId || !cfg.templateId || !cfg.ownerEmail) {
+    res.style.background = 'var(--danger-bg)'; res.style.color = 'var(--danger)';
+    res.textContent = '❌ กรุณากรอกข้อมูลให้ครบก่อนทดสอบ'; return;
+  }
+  try {
+    emailjs.init(cfg.publicKey);
+    await emailjs.send(cfg.serviceId, cfg.templateId, {
+      to_email: cfg.ownerEmail, to_name: 'Owner',
+      subject: '[Saffron Dashboard] ทดสอบการแจ้งเตือน',
+      body: 'ระบบแจ้งเตือนทำงานปกติ ✅\n\nอีเมลนี้ถูกส่งจาก Saffron Marketing Dashboard',
+    });
+    res.style.background = 'var(--success-bg)'; res.style.color = 'var(--success)';
+    res.textContent = '✅ ส่ง Email ทดสอบสำเร็จ — ตรวจสอบกล่อง Inbox ได้เลย';
+  } catch(e) {
+    res.style.background = 'var(--danger-bg)'; res.style.color = 'var(--danger)';
+    res.textContent = '❌ ส่งไม่สำเร็จ: ' + (e.text || e.message || JSON.stringify(e));
+  }
+}
+
+function checkDeadlineReminders() {
+  const cfg = getNotifConfig();
+  if (!cfg.ownerEmail || !cfg.deadlineDays) return;
+  const sent = JSON.parse(localStorage.getItem(NOTIF_SENT_KEY) || '{}');
+  const today = new Date(); today.setHours(0,0,0,0);
+  campaigns.filter(c => c.status === 'pending' && c.approveBy).forEach(c => {
+    const deadline = new Date(c.approveBy); deadline.setHours(0,0,0,0);
+    const days = Math.ceil((deadline - today) / 86400000);
+    const sentKey = `deadline_${c.id}_${c.approveBy}`;
+    if (days >= 0 && days <= cfg.deadlineDays && !sent[sentKey]) {
+      sent[sentKey] = new Date().toISOString();
+      localStorage.setItem(NOTIF_SENT_KEY, JSON.stringify(sent));
+      const urgLabel = days === 0 ? 'ต้อง Approve วันนี้!' : `เหลือ ${days} วัน`;
+      sendNotif(cfg.ownerEmail, 'Owner', `[Saffron Dashboard] ⚡ ด่วน! แคมเปญรอ Approve: ${c.name}`, [
+        `⚡ มีแคมเปญที่รอการอนุมัติและใกล้ถึง Deadline แล้ว`,
+        ``,
+        `ชื่อแคมเปญ: ${c.name}`,
+        `Approve ภายใน: ${c.approveBy} (${urgLabel})`,
+        ``,
+        `กรุณาเปิด Dashboard เพื่ออนุมัติโดยด่วน`,
+      ]);
+    }
   });
 }
 
