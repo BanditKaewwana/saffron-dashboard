@@ -1626,7 +1626,7 @@ function saveNotifConfig() {
     showToast('กรุณากรอกอีเมล Owner และ Manager', 'error'); return;
   }
   localStorage.setItem(NOTIF_KEY, JSON.stringify(cfg));
-  emailjs.init(cfg.publicKey);
+  emailjs.init({ publicKey: cfg.publicKey });
   closeModal('notifModal');
   showToast('💾 บันทึกการตั้งค่าแจ้งเตือนแล้ว ✅', 'success');
   updateNotifBtnState();
@@ -1657,7 +1657,7 @@ async function sendNotif(toEmail, toName, subject, bodyLines) {
   const cfg = getNotifConfig();
   if (!cfg.publicKey || !cfg.serviceId || !cfg.templateId) return;
   try {
-    emailjs.init(cfg.publicKey);
+    emailjs.init({ publicKey: cfg.publicKey });
     await emailjs.send(cfg.serviceId, cfg.templateId, {
       to_email: toEmail,
       to_name: toName,
@@ -1727,7 +1727,7 @@ async function testNotif() {
     res.textContent = '❌ กรุณากรอกข้อมูลให้ครบก่อนทดสอบ'; return;
   }
   try {
-    emailjs.init(cfg.publicKey);
+    emailjs.init({ publicKey: cfg.publicKey });
     await emailjs.send(cfg.serviceId, cfg.templateId, {
       to_email: cfg.ownerEmail, to_name: 'Owner',
       subject: '[Saffron Dashboard] ทดสอบการแจ้งเตือน',
