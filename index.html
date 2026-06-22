@@ -1189,7 +1189,35 @@ function openDetail(id) {
   const lsPh=c.lsPromo?`฿${Number(c.lsPromo).toLocaleString()} <s style="color:var(--muted);font-size:12px">฿${Number(c.lsOrig||0).toLocaleString()}</s> <span style="color:var(--success);font-size:12px">(ลด ${lsDisc})</span>`:c.lsOrig?`฿${Number(c.lsOrig).toLocaleString()}`:'—';
   const chs=(c.channels||[]).map(ch=>({instagram:'📸',facebook:'📘',tiktok:'🎵',booking:'🏨',agoda:'🌐',direct:'💬',line:'💚'}[ch]||'')+' '+ch).join(' · ');
   let ap='';
-  if(c.status==='pending'&&currentRole==='owner') ap=`<div class="approval-box"><div style="font-size:13px;font-weight:700;color:var(--warning);margin-bottom:10px">⚡ รออนุมัติจาก Owner</div><div class="fgroup" style="margin-bottom:10px"><label>หมายเหตุ</label><textarea id="apCmt" style="min-height:60px" placeholder="ความคิดเห็น หรือสิ่งที่ต้องแก้ไข..."></textarea></div><div style="display:flex;gap:8px"><button class="btn-approve" onclick="approveD('${c.id}')">✅ อนุมัติ</button><button class="btn-reject" onclick="rejectD('${c.id}')">❌ ส่งกลับแก้ไข</button></div></div>`;
+  if(c.status==='pending'&&currentRole==='owner') ap=`
+    <div class="approval-box">
+      <div style="font-size:13px;font-weight:700;color:var(--warning);margin-bottom:14px">⚡ รออนุมัติจาก Owner</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:10px">เลือกจุดที่ต้องปรับปรุง แล้วใส่คำแนะนำแต่ละหัวข้อ (ถ้าไม่มีจุดไหนต้องแก้ กด ✅ อนุมัติได้เลย)</div>
+      <div id="fbItems" style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px">
+        ${[
+          ['fb_name','ชื่อแคมเปญ'],
+          ['fb_desc','คำอธิบาย / Concept'],
+          ['fb_price','ราคา / ส่วนลด'],
+          ['fb_dates','ช่วงเวลา'],
+          ['fb_ch','ช่องทางโปรโมต'],
+          ['fb_other','อื่นๆ'],
+        ].map(([id,label])=>`
+          <div style="border:1px solid var(--border);border-radius:8px;overflow:hidden">
+            <label style="display:flex;align-items:center;gap:10px;padding:10px 12px;cursor:pointer;background:white;user-select:none" onclick="toggleFbItem('${id}')">
+              <span id="${id}_ico" style="font-size:16px">☐</span>
+              <span style="font-size:13px;font-weight:500">${label}</span>
+            </label>
+            <div id="${id}_wrap" style="display:none;padding:0 12px 10px">
+              <textarea id="${id}" style="width:100%;min-height:56px;border:1px solid var(--border);border-radius:6px;padding:8px;font-family:inherit;font-size:13px;resize:vertical" placeholder="ระบุสิ่งที่ต้องแก้ไข..."></textarea>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn-approve" onclick="approveD('${c.id}')">✅ อนุมัติ</button>
+        <button class="btn-reject" onclick="rejectD('${c.id}')">↩️ ส่งกลับพร้อมคำแนะนำ</button>
+      </div>
+    </div>`;
   const hist=(c.history||[]).slice().reverse().map(h=>`<div class="h-item"><div class="h-dot"></div><div><span class="h-action">${h.action}</span> โดย ${h.by} · ${fmtDT(h.at)}${h.comment?`<div style="font-style:italic;margin-top:2px">"${h.comment}"</div>`:''}</div></div>`).join('');
   document.getElementById('detailTitle').textContent=c.name;
   const urg = urgencyInfo(c);
@@ -1356,8 +1384,40 @@ function printCampaign(id) {
 
 // ====== ACTIONS ======
 function quickApprove(id){const c=campaigns.find(x=>x.id===id);if(!c)return;c.status='approved';c.updatedAt=new Date().toISOString();c.history=[...(c.history||[]),{action:'อนุมัติแล้ว',by:'Owner',at:c.updatedAt}];save();renderAll();showToast('✅ อนุมัติแล้ว','success');}
-function approveD(id){const c=campaigns.find(x=>x.id===id);if(!c)return;const cmt=document.getElementById('apCmt')?.value.trim()||'';c.status='approved';c.updatedAt=new Date().toISOString();c.history=[...(c.history||[]),{action:'อนุมัติแล้ว',by:'Owner',at:c.updatedAt,comment:cmt}];save();closeModal('detailModal');renderAll();showToast('✅ อนุมัติแล้ว','success');notifApproved(c);}
-function rejectD(id){const c=campaigns.find(x=>x.id===id);if(!c)return;const cmt=document.getElementById('apCmt')?.value.trim()||'';c.status='rejected';c.updatedAt=new Date().toISOString();c.history=[...(c.history||[]),{action:'ส่งกลับแก้ไข',by:'Owner',at:c.updatedAt,comment:cmt}];save();closeModal('detailModal');renderAll();showToast('ส่งกลับให้แก้ไข','error');notifRejected(c,cmt);}
+function toggleFbItem(id) {
+  const wrap = document.getElementById(id+'_wrap');
+  const ico = document.getElementById(id+'_ico');
+  const open = wrap.style.display === 'none';
+  wrap.style.display = open ? 'block' : 'none';
+  ico.textContent = open ? '☑' : '☐';
+  if (open) document.getElementById(id)?.focus();
+}
+
+function collectFeedback() {
+  const fields = [
+    ['fb_name','ชื่อแคมเปญ'],['fb_desc','คำอธิบาย / Concept'],
+    ['fb_price','ราคา / ส่วนลด'],['fb_dates','ช่วงเวลา'],
+    ['fb_ch','ช่องทางโปรโมต'],['fb_other','อื่นๆ'],
+  ];
+  const items = fields.map(([id,label])=>{
+    const wrap = document.getElementById(id+'_wrap');
+    const val = document.getElementById(id)?.value.trim();
+    if (wrap?.style.display !== 'none' && val) return `• ${label}: ${val}`;
+    return null;
+  }).filter(Boolean);
+  return items.join('\n');
+}
+
+function approveD(id){const c=campaigns.find(x=>x.id===id);if(!c)return;c.status='approved';c.updatedAt=new Date().toISOString();c.history=[...(c.history||[]),{action:'อนุมัติแล้ว',by:'Owner',at:c.updatedAt}];save();closeModal('detailModal');renderAll();showToast('✅ อนุมัติแล้ว','success');notifApproved(c);}
+
+function rejectD(id){
+  const c=campaigns.find(x=>x.id===id);if(!c)return;
+  const cmt=collectFeedback();
+  if(!cmt){showToast('กรุณาเลือกและใส่อย่างน้อย 1 จุดที่ต้องแก้ไข','error');return;}
+  c.status='rejected';c.updatedAt=new Date().toISOString();
+  c.history=[...(c.history||[]),{action:'ส่งกลับแก้ไข',by:'Owner',at:c.updatedAt,comment:cmt}];
+  save();closeModal('detailModal');renderAll();showToast('↩️ ส่งกลับพร้อมคำแนะนำแล้ว','error');notifRejected(c,cmt);
+}
 function quickSubmit(id){const c=campaigns.find(x=>x.id===id);if(!c)return;c.status='pending';c.updatedAt=new Date().toISOString();c.history=[...(c.history||[]),{action:'ส่งขออนุมัติ',by:'Manager',at:c.updatedAt}];save();renderAll();showToast('📤 ส่งขออนุมัติแล้ว');notifSubmitted(c);}
 
 function openSubmitComment(id) {
