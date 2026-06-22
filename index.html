@@ -1774,7 +1774,10 @@ async function sendNotif(toEmail, toName, subject, bodyLines) {
       subject: subject,
       body: bodyLines.join('\n'),
     });
-  } catch(e) { console.warn('EmailJS error:', e); }
+  } catch(e) {
+    console.warn('EmailJS error:', e);
+    showToast('⚠️ ส่ง Email ไม่สำเร็จ: ' + (e.text || e.message || JSON.stringify(e)), 'error');
+  }
 }
 
 function notifSubmitted(campaign, comment='') {
