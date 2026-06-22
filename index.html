@@ -1225,7 +1225,14 @@ function openDetail(id) {
     </div>${ap}
     <div class="history-log"><div class="h-title">ประวัติ</div>${hist||'—'}</div>`;
   let ft='';
-  if(c.status==='draft'||c.status==='rejected'){ft+=`<button class="btn-secondary" onclick="closeModal('detailModal');openEdit('${c.id}')">✏️ แก้ไข</button>`;ft+=`<button class="btn-primary" onclick="closeModal('detailModal');quickSubmit('${c.id}')">📤 ${c.status==='rejected'?'ส่งอีกครั้ง':'ส่งขออนุมัติ'}</button>`;}
+  if(c.status==='draft'||c.status==='rejected'){
+    ft+=`<button class="btn-secondary" onclick="closeModal('detailModal');openEdit('${c.id}')">✏️ แก้ไข</button>`;
+    if(c.status==='rejected'){
+      ft+=`<button class="btn-primary" onclick="openSubmitComment('${c.id}')">📤 ส่งอีกครั้ง</button>`;
+    } else {
+      ft+=`<button class="btn-primary" onclick="closeModal('detailModal');quickSubmit('${c.id}')">📤 ส่งขออนุมัติ</button>`;
+    }
+  }
   if(c.status==='approved'&&currentRole==='owner') ft+=`<button class="btn-golive" onclick="doStatus('${c.id}','live','เริ่ม Live');closeModal('detailModal')">🚀 Go Live</button>`;
   if(c.status==='live'&&currentRole==='owner') ft+=`<button class="btn-secondary" onclick="doStatus('${c.id}','expired','ปิดแคมเปญ');closeModal('detailModal')">⏹ ปิดแคมเปญ</button>`;
   ft+=`<button class="btn-secondary" onclick="printCampaign('${c.id}')">📄 ดาวน์โหลด PDF</button>`;
@@ -1352,6 +1359,29 @@ function quickApprove(id){const c=campaigns.find(x=>x.id===id);if(!c)return;c.st
 function approveD(id){const c=campaigns.find(x=>x.id===id);if(!c)return;const cmt=document.getElementById('apCmt')?.value.trim()||'';c.status='approved';c.updatedAt=new Date().toISOString();c.history=[...(c.history||[]),{action:'อนุมัติแล้ว',by:'Owner',at:c.updatedAt,comment:cmt}];save();closeModal('detailModal');renderAll();showToast('✅ อนุมัติแล้ว','success');notifApproved(c);}
 function rejectD(id){const c=campaigns.find(x=>x.id===id);if(!c)return;const cmt=document.getElementById('apCmt')?.value.trim()||'';c.status='rejected';c.updatedAt=new Date().toISOString();c.history=[...(c.history||[]),{action:'ส่งกลับแก้ไข',by:'Owner',at:c.updatedAt,comment:cmt}];save();closeModal('detailModal');renderAll();showToast('ส่งกลับให้แก้ไข','error');notifRejected(c,cmt);}
 function quickSubmit(id){const c=campaigns.find(x=>x.id===id);if(!c)return;c.status='pending';c.updatedAt=new Date().toISOString();c.history=[...(c.history||[]),{action:'ส่งขออนุมัติ',by:'Manager',at:c.updatedAt}];save();renderAll();showToast('📤 ส่งขออนุมัติแล้ว');notifSubmitted(c);}
+
+function openSubmitComment(id) {
+  const footer = document.getElementById('detailFooter');
+  footer.innerHTML = `
+    <div style="width:100%;display:flex;flex-direction:column;gap:10px">
+      <div style="font-size:13px;font-weight:600;color:var(--sea)">📝 หมายเหตุถึง Owner (ไม่บังคับ)</div>
+      <textarea id="submitCmt" style="width:100%;min-height:70px;border:1px solid var(--border);border-radius:8px;padding:10px;font-family:inherit;font-size:13px;resize:vertical" placeholder="เช่น แก้ไขเปอร์เซ็นต์ส่วนลดเป็น 20% ตามที่แจ้งแล้ว..."></textarea>
+      <div style="display:flex;gap:8px;justify-content:flex-end">
+        <button class="btn-secondary" onclick="openDetail('${id}')">ยกเลิก</button>
+        <button class="btn-primary" onclick="quickSubmitWithComment('${id}')">📤 ยืนยันส่งอีกครั้ง</button>
+      </div>
+    </div>`;
+}
+
+function quickSubmitWithComment(id) {
+  const c = campaigns.find(x => x.id === id); if(!c) return;
+  const cmt = document.getElementById('submitCmt')?.value.trim() || '';
+  c.status = 'pending'; c.updatedAt = new Date().toISOString();
+  c.history = [...(c.history||[]), {action:'ส่งอีกครั้ง', by:'Manager', at:c.updatedAt, comment:cmt}];
+  save(); closeModal('detailModal'); renderAll();
+  showToast('📤 ส่งอีกครั้งแล้ว');
+  notifSubmitted(c, cmt);
+}
 function doStatus(id,st,msg){const c=campaigns.find(x=>x.id===id);if(!c)return;c.status=st;c.updatedAt=new Date().toISOString();c.history=[...(c.history||[]),{action:msg,by:currentRole==='owner'?'Owner':'Manager',at:c.updatedAt}];save();renderAll();showToast(msg+' ✅');}
 function delCamp(id){if(!confirm('ต้องการลบแคมเปญนี้?'))return;campaigns=campaigns.filter(c=>c.id!==id);save();renderAll();showToast('ลบแล้ว');}
 
@@ -1606,8 +1636,20 @@ function fillRoomGrid(rooms) {
 const NOTIF_KEY = 'sos_notif_config';
 const NOTIF_SENT_KEY = 'sos_notif_sent';
 
+const NOTIF_DEFAULTS = {
+  publicKey: 'FkAmAZnINDf-5V0ok',
+  serviceId: 'service_oymwq8y',
+  templateId: 'template_7pf925i',
+  ownerEmail: 'bkny1420@gmail.com',
+  managerEmail: 'saffronontheseakohchang@gmail.com',
+  deadlineDays: 2,
+};
+
 function getNotifConfig() {
-  try { return JSON.parse(localStorage.getItem(NOTIF_KEY) || '{}'); } catch(e) { return {}; }
+  try {
+    const saved = JSON.parse(localStorage.getItem(NOTIF_KEY) || '{}');
+    return { ...NOTIF_DEFAULTS, ...saved };
+  } catch(e) { return { ...NOTIF_DEFAULTS }; }
 }
 
 function saveNotifConfig() {
@@ -1667,17 +1709,19 @@ async function sendNotif(toEmail, toName, subject, bodyLines) {
   } catch(e) { console.warn('EmailJS error:', e); }
 }
 
-function notifSubmitted(campaign) {
+function notifSubmitted(campaign, comment='') {
   const cfg = getNotifConfig();
   if (!cfg.ownerEmail) return;
   const typeLabel = {room:'ห้องพัก',fb:'ร้านอาหาร',package:'Package',longstay:'Long Stay',freeform:'กำหนดเอง'}[campaign.type]||campaign.type;
-  sendNotif(cfg.ownerEmail, 'Owner', `[Saffron Dashboard] ขออนุมัติแคมเปญ: ${campaign.name}`, [
-    `📤 Manager ส่งขออนุมัติแคมเปญใหม่`,
+  const isResubmit = (campaign.history||[]).filter(h=>h.action==='ส่งอีกครั้ง').length > 0;
+  sendNotif(cfg.ownerEmail, 'Owner', `[Saffron Dashboard] ${isResubmit?'↩️ ส่งแก้ไขแล้ว':'📤 ขออนุมัติ'}: ${campaign.name}`, [
+    isResubmit ? `↩️ Manager แก้ไขและส่งกลับมาใหม่แล้ว` : `📤 Manager ส่งขออนุมัติแคมเปญ`,
     ``,
     `ชื่อแคมเปญ: ${campaign.name}`,
     `ประเภท: ${typeLabel}`,
     `ช่วงเวลา: ${campaign.startDate||'—'} ถึง ${campaign.endDate||'—'}`,
     campaign.approveBy ? `⚡ Approve ภายใน: ${campaign.approveBy}` : '',
+    comment ? `\nหมายเหตุจาก Manager: "${comment}"` : '',
     ``,
     `กรุณาเปิด Dashboard เพื่อตรวจสอบและอนุมัติ`,
   ]);
