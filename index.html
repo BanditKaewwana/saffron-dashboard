@@ -1173,7 +1173,10 @@ function saveCampaign(target) {
     showToast(act+' ✅');
   }
   clearFormDraft();save();closeModal('formModal');renderAll();
-  if(st==='pending'&&!editingId) notifSubmitted(campaigns[campaigns.length-1]);
+  if(st==='pending') {
+    const notifC = editingId ? campaigns.find(c=>c.id===editingId) : campaigns[campaigns.length-1];
+    if(notifC) notifSubmitted(notifC);
+  }
 }
 
 // ====== DETAIL ======
