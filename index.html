@@ -1951,18 +1951,24 @@ function updateNotifBtnState() {
 
 async function sendNotif(toEmail, toName, subject, bodyLines) {
   const cfg = getNotifConfig();
-  if (!cfg.publicKey || !cfg.serviceId || !cfg.templateId) return;
+  if (!cfg.publicKey || !cfg.serviceId || !cfg.templateId) {
+    console.warn('[Notif] config missing', cfg);
+    return;
+  }
+  console.log('[Notif] sending to', toEmail, subject);
   try {
     emailjs.init({ publicKey: cfg.publicKey });
     await emailjs.send(cfg.serviceId, cfg.templateId, {
       to_email: toEmail,
       to_name: toName,
       subject: subject,
-      body: bodyLines.join('\n'),
+      body: bodyLines.filter(Boolean).join('\n'),
     });
+    console.log('[Notif] sent OK to', toEmail);
   } catch(e) {
-    console.warn('EmailJS error:', e);
-    showToast('⚠️ ส่ง Email ไม่สำเร็จ: ' + (e.text || e.message || JSON.stringify(e)), 'error');
+    console.error('[Notif] error:', e);
+    const msg = e.text || e.message || JSON.stringify(e);
+    alert('⚠️ ส่ง Email แจ้งเตือนไม่สำเร็จ\n\nถึง: ' + toEmail + '\nError: ' + msg + '\n\nกรุณาเปิด 🔔 Settings แล้วกด ทดสอบส่ง Email');
   }
 }
 
