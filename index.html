@@ -1388,6 +1388,7 @@ function openDetail(id) {
       ft+=`<button class="btn-primary" onclick="closeModal('detailModal');quickSubmit('${c.id}')">📤 ส่งขออนุมัติ</button>`;
     }
   }
+  if(c.status==='pending'&&currentRole==='owner') ft+=`<button class="btn-secondary" onclick="closeModal('detailModal');openEdit('${c.id}')">✏️ เปิดดูทุก Field & แก้ไข</button>`;
   if(c.status==='approved'&&currentRole==='owner') ft+=`<button class="btn-golive" onclick="doStatus('${c.id}','live','เริ่ม Live');closeModal('detailModal')">🚀 Go Live</button>`;
   if(c.status==='live'&&currentRole==='owner') ft+=`<button class="btn-secondary" onclick="doStatus('${c.id}','expired','ปิดแคมเปญ');closeModal('detailModal')">⏹ ปิดแคมเปญ</button>`;
   ft+=`<button class="btn-secondary" onclick="printCampaign('${c.id}')">📄 ดาวน์โหลด PDF</button>`;
