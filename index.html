@@ -1006,7 +1006,7 @@ function renderList() {
     const period = c.startDate&&c.endDate?`${fmtDate(c.startDate)} – ${fmtDate(c.endDate)}`:'—';
     const si = statusInfo(c.status);
     let acts = `<button class="btn-icon btn-sm" onclick="event.stopPropagation();openDetail('${c.id}')">👁️</button>`;
-    if (c.status==='draft'||c.status==='rejected') acts+=`<button class="btn-icon btn-sm" onclick="event.stopPropagation();openEdit('${c.id}')">✏️</button>`;
+    if ((c.status==='draft'||c.status==='rejected'||(c.status==='pending'&&currentRole==='manager'))) acts+=`<button class="btn-icon btn-sm" onclick="event.stopPropagation();openEdit('${c.id}')">✏️</button>`;
     if (c.status==='pending'&&currentRole==='owner') acts+=`<button class="btn-approve btn-sm" onclick="event.stopPropagation();quickApprove('${c.id}')">✅ Approve</button>`;
     if (c.status==='approved') acts+=`<button class="btn-golive btn-sm" onclick="event.stopPropagation();doStatus('${c.id}','live','เริ่ม Live')">🚀 Go Live</button>`;
     if (c.status==='live'&&currentRole==='owner') acts+=`<button class="btn-secondary btn-sm" onclick="event.stopPropagation();doStatus('${c.id}','expired','ปิดแคมเปญ')">⏹ ปิด</button>`;
@@ -1365,7 +1365,7 @@ function openDetail(id) {
     </div>${ap}
     <div class="history-log"><div class="h-title">ประวัติ</div>${hist||'—'}</div>`;
   let ft='';
-  if(c.status==='draft'||c.status==='rejected'){
+  if(c.status==='draft'||c.status==='rejected'||(c.status==='pending'&&currentRole==='manager')){
     ft+=`<button class="btn-secondary" onclick="closeModal('detailModal');openEdit('${c.id}')">✏️ แก้ไข</button>`;
     if(c.status==='rejected'){
       ft+=`<button class="btn-primary" onclick="openSubmitComment('${c.id}')">📤 ส่งอีกครั้ง</button>`;
