@@ -1198,6 +1198,7 @@ function openEdit(id) {
   editingId=id;
   document.getElementById('formModalTitle').textContent='แก้ไขแคมเปญ';
   clearForm();fillForm(c);switchTab(0,document.querySelectorAll('.ftab-btn')[0]);
+  document.getElementById('submitBtn').textContent = currentRole==='owner'?'✅ บันทึก & อนุมัติเลย':'📤 ส่งขออนุมัติ';
   document.getElementById('formModal').style.display='flex';
 }
 
@@ -1953,6 +1954,7 @@ async function sendNotif(toEmail, toName, subject, bodyLines) {
   const cfg = getNotifConfig();
   if (!cfg.publicKey || !cfg.serviceId || !cfg.templateId) {
     console.warn('[Notif] config missing', cfg);
+    alert('⚠️ ไม่สามารถส่ง Email แจ้งเตือนได้\n\nกรุณาเปิด 🔔 Settings แล้วตรวจสอบ Public Key / Service ID / Template ID');
     return;
   }
   console.log('[Notif] sending to', toEmail, subject);
@@ -1975,6 +1977,7 @@ async function sendNotif(toEmail, toName, subject, bodyLines) {
 function notifSubmitted(campaign, comment='') {
   const cfg = getNotifConfig();
   const owners = (cfg.owners && cfg.owners.length) ? cfg.owners : NOTIF_DEFAULTS.owners;
+  showToast('📧 กำลังส่งแจ้งเตือน Owner...');
   if (!owners.length) return;
   const typeLabel = {room:'ห้องพัก',fb:'ร้านอาหาร',package:'Package',longstay:'Long Stay',freeform:'กำหนดเอง'}[campaign.type]||campaign.type;
   const isResubmit = (campaign.history||[]).filter(h=>h.action==='ส่งอีกครั้ง').length > 0;
