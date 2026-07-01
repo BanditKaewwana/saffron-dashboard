@@ -312,6 +312,7 @@
     </div>
     <div class="header-right">
       <span class="role-badge" id="roleBadge"></span>
+      <button class="btn-icon" id="pinMgmtBtn" onclick="openPinModal()" title="จัดการ PIN" style="display:none;font-size:18px;padding:4px 8px;background:none;border:none;cursor:pointer;opacity:0.6;transition:opacity 0.2s" onmouseenter="this.style.opacity=1" onmouseleave="this.style.opacity=0.6">🔐</button>
       <button class="btn-icon" id="notifBtn" onclick="openNotifModal()" title="ตั้งค่าการแจ้งเตือน" style="font-size:18px;padding:4px 8px;background:none;border:none;cursor:pointer;opacity:0.6;transition:opacity 0.2s" onmouseenter="this.style.opacity=1" onmouseleave="this.style.opacity=0.6">🔔</button>
       <button class="btn-icon" id="syncBtn" onclick="openSyncModal()" title="Cloud Sync" style="font-size:18px;padding:4px 8px;background:none;border:none;cursor:pointer;opacity:0.6;transition:opacity 0.2s" onmouseenter="this.style.opacity=1" onmouseleave="this.style.opacity=0.6">☁️</button>
       <button class="btn-logout" onclick="logout()">ออกจากระบบ</button>
@@ -632,6 +633,26 @@
 </div>
 
 <!-- NOTIFICATION SETTINGS MODAL -->
+<div class="modal-overlay" id="pinModal" style="display:none" onclick="closeIfOverlay(event,'pinModal')">
+  <div class="modal" style="max-width:460px">
+    <div class="modal-header">
+      <span class="modal-title">🔐 จัดการ PIN</span>
+      <button class="modal-close" onclick="closeModal('pinModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="background:var(--sea-light);border-radius:8px;padding:12px 14px;font-size:12px;color:var(--sea);margin-bottom:16px;line-height:1.8">
+        ตั้ง PIN ให้แต่ละคน — ถ้าปล่อยว่างไว้จะเข้าได้โดยไม่ต้องใส่ PIN<br>
+        PIN จะ sync ทุกเครื่องผ่าน Firebase อัตโนมัติ
+      </div>
+      <div id="pinMgmtList"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeModal('pinModal')">ยกเลิก</button>
+      <button class="btn-primary" onclick="savePins()">💾 บันทึก PIN</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="notifModal" style="display:none" onclick="closeIfOverlay(event,'notifModal')">
   <div class="modal" style="max-width:520px">
     <div class="modal-header">
@@ -718,6 +739,8 @@ let currentSearch = '';
 
 // ====== FIREBASE CLOUD SYNC ======
 let fbRef = null;
+let pinsRef = null;
+let pinsData = {}; // { "manager": "1234", "Bandit": "5678", ... }
 
 function save() {
   localStorage.setItem('sos_v3', JSON.stringify(campaigns));
@@ -756,6 +779,8 @@ function initFirebase(config) {
       setSyncStatus('online', '✅ Cloud Sync เชื่อมต่อแล้ว — ข้อมูล sync อัตโนมัติทุกเครื่อง');
       document.getElementById('syncDisconnectBtn').style.display = '';
     }, err => { setSyncStatus('error', '❌ เชื่อมต่อไม่ได้: ' + err.message); });
+    pinsRef = db.ref('sos_pins');
+    pinsRef.on('value', snap => { pinsData = snap.val() || {}; });
     return true;
   } catch(e) { setSyncStatus('error', '❌ Config ไม่ถูกต้อง: ' + e.message); return false; }
 }
@@ -819,19 +844,69 @@ function renderLoginScreen() {
   const owners = (cfg.owners && cfg.owners.length) ? cfg.owners : NOTIF_DEFAULTS.owners;
   const btns = document.getElementById('loginRoleBtns');
   btns.innerHTML =
-    `<button class="role-btn" onclick="login('manager')">
+    `<button class="role-btn" onclick="showPinPrompt('manager')">
        <span class="role-icon">📋</span>
        <span><span class="role-name">ผู้จัดการ (Manager)</span><span class="role-desc">สร้างและแก้ไขแคมเปญ · ส่งขออนุมัติ</span></span>
      </button>` +
     owners.map((o, i) =>
-      `<button class="role-btn" onclick="login('owner',${i})">
+      `<button class="role-btn" onclick="showPinPrompt('owner',${i})">
          <span class="role-icon">👑</span>
          <span><span class="role-name">${o.name} (Owner)</span><span class="role-desc">Approve · ดูภาพรวม · สร้างแคมเปญ</span></span>
        </button>`
-    ).join('');
+    ).join('') +
+    `<div id="pinPromptBox" style="display:none;margin-top:4px;padding:16px;background:var(--cream);border-radius:12px;border:1.5px solid var(--border)">
+       <div id="pinPromptLabel" style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:10px"></div>
+       <div style="display:flex;gap:8px;align-items:center">
+         <input id="pinInput" type="password" inputmode="numeric" maxlength="8" placeholder="ใส่ PIN"
+           style="flex:1;padding:10px 14px;border:1.5px solid #ddd;border-radius:8px;font-size:18px;letter-spacing:6px;font-family:inherit;text-align:center"
+           onkeydown="if(event.key==='Enter')confirmPin()">
+         <button onclick="confirmPin()" class="btn-primary" style="padding:10px 18px;white-space:nowrap">เข้าสู่ระบบ</button>
+       </div>
+       <div id="pinError" style="display:none;margin-top:8px;font-size:12px;color:var(--danger);text-align:center">❌ PIN ไม่ถูกต้อง กรุณาลองใหม่</div>
+     </div>`;
 }
 
-function login(role, ownerIndex) {
+let _pendingLoginRole = null;
+let _pendingLoginOwnerIndex = null;
+
+function showPinPrompt(role, ownerIndex) {
+  _pendingLoginRole = role;
+  _pendingLoginOwnerIndex = ownerIndex ?? null;
+  const cfg = getNotifConfig();
+  const owners = (cfg.owners && cfg.owners.length) ? cfg.owners : NOTIF_DEFAULTS.owners;
+  const name = role === 'owner' ? owners[ownerIndex].name : 'Manager';
+  const pinKey = role === 'owner' ? owners[ownerIndex].name : 'manager';
+  const box = document.getElementById('pinPromptBox');
+  document.getElementById('pinPromptLabel').textContent = `🔐 PIN สำหรับ ${name}`;
+  document.getElementById('pinError').style.display = 'none';
+  document.getElementById('pinInput').value = '';
+  // If no PIN set for this person yet, skip PIN and enter directly
+  if (!pinsData[pinKey]) {
+    doLogin(role, ownerIndex);
+    return;
+  }
+  box.style.display = 'block';
+  setTimeout(() => document.getElementById('pinInput').focus(), 100);
+}
+
+function confirmPin() {
+  const role = _pendingLoginRole;
+  const ownerIndex = _pendingLoginOwnerIndex;
+  const cfg = getNotifConfig();
+  const owners = (cfg.owners && cfg.owners.length) ? cfg.owners : NOTIF_DEFAULTS.owners;
+  const pinKey = role === 'owner' ? owners[ownerIndex].name : 'manager';
+  const entered = document.getElementById('pinInput').value;
+  if (pinsData[pinKey] && entered !== String(pinsData[pinKey])) {
+    document.getElementById('pinError').style.display = 'block';
+    document.getElementById('pinInput').value = '';
+    document.getElementById('pinInput').focus();
+    return;
+  }
+  document.getElementById('pinPromptBox').style.display = 'none';
+  doLogin(role, ownerIndex);
+}
+
+function doLogin(role, ownerIndex) {
   currentRole = role;
   if (role === 'owner') {
     const cfg = getNotifConfig();
@@ -846,13 +921,17 @@ function login(role, ownerIndex) {
   renderPricing();
   renderAll();
   updateNotifBtnState();
+  updatePinBtnVisibility();
   setTimeout(checkDeadlineReminders, 2000);
   const n = campaigns.filter(c => c.status === 'pending').length;
   if (role === 'owner' && n > 0) showToast(`มี ${n} แคมเปญรออนุมัติ`, 'error');
 }
+
 function logout() {
   currentRole = null;
   currentOwnerProfile = null;
+  _pendingLoginRole = null;
+  _pendingLoginOwnerIndex = null;
   renderLoginScreen();
   document.getElementById('loginScreen').style.display = 'flex';
   document.getElementById('app').style.display = 'none';
@@ -1723,6 +1802,63 @@ function fillRoomGrid(rooms) {
     }
     calcRoomPromo(rd.id);
   });
+}
+
+// ====== PIN MANAGEMENT ======
+function updatePinBtnVisibility() {
+  const btn = document.getElementById('pinMgmtBtn');
+  if (btn) btn.style.display = currentRole === 'owner' ? '' : 'none';
+}
+
+function openPinModal() {
+  const cfg = getNotifConfig();
+  const owners = (cfg.owners && cfg.owners.length) ? cfg.owners : NOTIF_DEFAULTS.owners;
+  const list = document.getElementById('pinMgmtList');
+  const rows = [
+    { key: 'manager', label: '📋 Manager', icon: '📋' },
+    ...owners.map(o => ({ key: o.name, label: `👑 ${o.name} (Owner)`, icon: '👑' })),
+  ];
+  list.innerHTML = rows.map(r => `
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+      <span style="width:140px;font-size:13px;font-weight:600;color:var(--text)">${r.label}</span>
+      <div style="position:relative;flex:1">
+        <input type="password" inputmode="numeric" maxlength="8" id="pin_${r.key}"
+          value="${pinsData[r.key] || ''}"
+          placeholder="ไม่ต้องใส่ PIN"
+          style="width:100%;padding:9px 36px 9px 12px;border:1.5px solid #ddd;border-radius:8px;font-size:16px;letter-spacing:4px;font-family:inherit;box-sizing:border-box">
+        <button type="button" onclick="togglePinVis('pin_${r.key}',this)"
+          style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:15px;opacity:0.5">👁</button>
+      </div>
+    </div>`).join('');
+  document.getElementById('pinModal').style.display = 'flex';
+}
+
+function togglePinVis(inputId, btn) {
+  const inp = document.getElementById(inputId);
+  inp.type = inp.type === 'password' ? 'text' : 'password';
+  btn.style.opacity = inp.type === 'text' ? '1' : '0.5';
+}
+
+function savePins() {
+  const cfg = getNotifConfig();
+  const owners = (cfg.owners && cfg.owners.length) ? cfg.owners : NOTIF_DEFAULTS.owners;
+  const keys = ['manager', ...owners.map(o => o.name)];
+  const newPins = {};
+  keys.forEach(k => {
+    const val = (document.getElementById('pin_' + k)?.value || '').trim();
+    if (val) newPins[k] = val;
+  });
+  if (pinsRef) {
+    pinsRef.set(newPins).then(() => {
+      pinsData = newPins;
+      closeModal('pinModal');
+      showToast('💾 บันทึก PIN แล้ว ✅', 'success');
+    }).catch(e => showToast('❌ บันทึกไม่สำเร็จ: ' + e.message, 'error'));
+  } else {
+    pinsData = newPins;
+    closeModal('pinModal');
+    showToast('⚠️ บันทึก PIN เฉพาะเครื่องนี้ (Firebase ยังไม่เชื่อมต่อ)', 'error');
+  }
 }
 
 // ====== NOTIFICATION SYSTEM ======
