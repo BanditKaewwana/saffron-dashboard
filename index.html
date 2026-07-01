@@ -1307,19 +1307,11 @@ function openDetail(id) {
   const chs=(c.channels||[]).map(ch=>({instagram:'📸',facebook:'📘',tiktok:'🎵',booking:'🏨',agoda:'🌐',direct:'💬',line:'💚'}[ch]||'')+' '+ch).join(' · ');
   let ap='';
   if(c.status==='pending'&&currentRole==='owner') ap=`
+    <div style="border-top:2px solid var(--border);margin:24px 0 16px 0"></div>
+    <div style="font-size:11px;font-weight:700;letter-spacing:1.5px;color:var(--muted);text-transform:uppercase;margin-bottom:14px">Review & Approve</div>
     <div class="approval-box">
-      <div style="font-size:13px;font-weight:700;color:var(--warning);margin-bottom:12px">⚡ รออนุมัติจาก Owner</div>
-      <div style="background:white;border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:14px;font-size:13px;display:flex;flex-direction:column;gap:8px">
-        <div style="font-size:11px;font-weight:700;letter-spacing:1px;color:var(--muted);margin-bottom:2px">สรุปแคมเปญ</div>
-        ${c.type!=='longstay'&&c.type!=='freeform'&&(c.promoPrice||c.originalPrice)?`<div style="display:flex;gap:8px"><span style="color:var(--muted);min-width:80px">ราคา</span><span style="font-weight:600">${ph}</span></div>`:''}
-        ${c.type==='longstay'?(c.lsPromo||c.lsOrig)?`<div style="display:flex;gap:8px"><span style="color:var(--muted);min-width:80px">ราคา</span><span style="font-weight:600">${lsPh}${lsDurLabel?' · '+lsDurLabel:''}</span></div>`:'':`${c.type==='freeform'&&c.ffPricing?`<div style="display:flex;gap:8px"><span style="color:var(--muted);min-width:80px">ราคา</span><span style="font-weight:600;white-space:pre-wrap">${c.ffPricing}</span></div>`:''}`}
-        ${c.startDate?`<div style="display:flex;gap:8px"><span style="color:var(--muted);min-width:80px">ช่วงเวลา</span><span>${fmtDate(c.startDate)} – ${fmtDate(c.endDate)}</span></div>`:''}
-        ${c.desc?`<div style="display:flex;gap:8px"><span style="color:var(--muted);min-width:80px">Concept</span><span style="white-space:pre-wrap">${c.desc}</span></div>`:''}
-        ${c.includes?`<div style="display:flex;gap:8px"><span style="color:var(--muted);min-width:80px">รายการรวม</span><span style="white-space:pre-wrap">${c.includes}</span></div>`:''}
-        ${c.terms?`<div style="display:flex;gap:8px"><span style="color:var(--muted);min-width:80px">เงื่อนไข</span><span style="white-space:pre-wrap;color:var(--muted)">${c.terms}</span></div>`:''}
-        ${chs?`<div style="display:flex;gap:8px"><span style="color:var(--muted);min-width:80px">ช่องทาง</span><span>${chs}</span></div>`:''}
-      </div>
-      <div style="font-size:12px;color:var(--muted);margin-bottom:10px">เลือกจุดที่ต้องปรับปรุง แล้วใส่คำแนะนำแต่ละหัวข้อ (ถ้าไม่มีจุดไหนต้องแก้ กด ✅ อนุมัติได้เลย)</div>
+      <div style="font-size:13px;font-weight:700;color:var(--warning);margin-bottom:10px">⚡ รออนุมัติจาก Owner</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:12px">เลือกจุดที่ต้องปรับปรุง แล้วใส่คำแนะนำ (ถ้าไม่มีจุดต้องแก้ กด ✅ อนุมัติได้เลย)</div>ุมัติได้เลย)</div>
       <div id="fbItems" style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px">
         ${(()=>{
           const priceStr = c.promoPrice ? `฿${Number(c.promoPrice).toLocaleString()} (ลด ${c.discount||'?'}%)` : c.originalPrice ? `฿${Number(c.originalPrice).toLocaleString()}` : '—';
