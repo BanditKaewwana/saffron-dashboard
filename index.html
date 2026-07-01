@@ -296,15 +296,8 @@
     <div class="login-logo">Saffron On The Sea</div>
     <div class="login-sub">Marketing Dashboard</div>
     <span class="login-label">เลือกบทบาทของคุณ</span>
-    <div class="role-btns">
-      <button class="role-btn" onclick="login('manager')">
-        <span class="role-icon">📋</span>
-        <span><span class="role-name">ผู้จัดการ (Manager)</span><span class="role-desc">สร้างและแก้ไขแคมเปญ · ส่งขออนุมัติ</span></span>
-      </button>
-      <button class="role-btn" onclick="login('owner')">
-        <span class="role-icon">👑</span>
-        <span><span class="role-name">เจ้าของ (Owner)</span><span class="role-desc">Approve · ดูภาพรวม · สร้างแคมเปญ</span></span>
-      </button>
+    <div class="role-btns" id="loginRoleBtns">
+      <!-- rendered by renderLoginScreen() -->
     </div>
   </div>
 </div>
@@ -662,10 +655,10 @@
       </div>
       <div class="fsection">
         <div class="fsection-title">อีเมลผู้รับ</div>
-        <div class="fgrid fgrid-2">
-          <div class="fgroup"><label>อีเมล Owner</label><input type="email" id="nf_owner_email" placeholder="owner@saffron.com"></div>
-          <div class="fgroup"><label>อีเมล Manager</label><input type="email" id="nf_mgr_email" placeholder="manager@saffron.com"></div>
-        </div>
+        <div class="fgroup" style="margin-bottom:10px"><label>อีเมล Manager</label><input type="email" id="nf_mgr_email" placeholder="manager@saffron.com"></div>
+        <div style="font-size:12px;font-weight:600;color:var(--muted);margin-bottom:8px">รายชื่อ Owner (เพิ่มได้หลายคน — ทุกคนจะได้รับ notification)</div>
+        <div id="nf_owners_list"></div>
+        <button type="button" onclick="addOwnerRow()" style="margin-top:8px;font-size:12px;padding:6px 14px;border:1.5px dashed var(--saffron);border-radius:8px;background:var(--saffron-pale);color:var(--saffron-deep);cursor:pointer;font-family:inherit">+ เพิ่ม Owner</button>
       </div>
       <div class="fsection">
         <div class="fsection-title">แจ้งเตือน Deadline</div>
@@ -819,11 +812,37 @@ window.addEventListener('load', function() {
 });
 
 // ====== AUTH ======
-function login(role) {
+let currentOwnerProfile = null; // { name, email } of the logged-in owner
+
+function renderLoginScreen() {
+  const cfg = getNotifConfig();
+  const owners = (cfg.owners && cfg.owners.length) ? cfg.owners : NOTIF_DEFAULTS.owners;
+  const btns = document.getElementById('loginRoleBtns');
+  btns.innerHTML =
+    `<button class="role-btn" onclick="login('manager')">
+       <span class="role-icon">📋</span>
+       <span><span class="role-name">ผู้จัดการ (Manager)</span><span class="role-desc">สร้างและแก้ไขแคมเปญ · ส่งขออนุมัติ</span></span>
+     </button>` +
+    owners.map((o, i) =>
+      `<button class="role-btn" onclick="login('owner',${i})">
+         <span class="role-icon">👑</span>
+         <span><span class="role-name">${o.name} (Owner)</span><span class="role-desc">Approve · ดูภาพรวม · สร้างแคมเปญ</span></span>
+       </button>`
+    ).join('');
+}
+
+function login(role, ownerIndex) {
   currentRole = role;
+  if (role === 'owner') {
+    const cfg = getNotifConfig();
+    const owners = (cfg.owners && cfg.owners.length) ? cfg.owners : NOTIF_DEFAULTS.owners;
+    currentOwnerProfile = owners[ownerIndex] || owners[0];
+  } else {
+    currentOwnerProfile = null;
+  }
   document.getElementById('loginScreen').style.display = 'none';
   document.getElementById('app').style.display = 'block';
-  document.getElementById('roleBadge').textContent = role === 'owner' ? '👑 Owner' : '📋 Manager';
+  document.getElementById('roleBadge').textContent = role === 'owner' ? `👑 ${currentOwnerProfile.name}` : '📋 Manager';
   renderPricing();
   renderAll();
   updateNotifBtnState();
@@ -833,6 +852,8 @@ function login(role) {
 }
 function logout() {
   currentRole = null;
+  currentOwnerProfile = null;
+  renderLoginScreen();
   document.getElementById('loginScreen').style.display = 'flex';
   document.getElementById('app').style.display = 'none';
 }
@@ -1394,7 +1415,7 @@ function printCampaign(id) {
 }
 
 // ====== ACTIONS ======
-function quickApprove(id){const c=campaigns.find(x=>x.id===id);if(!c)return;c.status='approved';c.updatedAt=new Date().toISOString();c.history=[...(c.history||[]),{action:'อนุมัติแล้ว',by:'Owner',at:c.updatedAt}];save();renderAll();showToast('✅ อนุมัติแล้ว','success');}
+function quickApprove(id){const c=campaigns.find(x=>x.id===id);if(!c)return;const ownerName=currentOwnerProfile?currentOwnerProfile.name:'Owner';c.status='approved';c.updatedAt=new Date().toISOString();c.history=[...(c.history||[]),{action:'อนุมัติแล้ว',by:ownerName,at:c.updatedAt}];save();renderAll();showToast('✅ อนุมัติแล้ว','success');}
 function toggleFbItem(id) {
   const wrap = document.getElementById(id+'_wrap');
   const ico = document.getElementById(id+'_ico');
@@ -1419,14 +1440,15 @@ function collectFeedback() {
   return items.join('\n');
 }
 
-function approveD(id){const c=campaigns.find(x=>x.id===id);if(!c)return;c.status='approved';c.updatedAt=new Date().toISOString();c.history=[...(c.history||[]),{action:'อนุมัติแล้ว',by:'Owner',at:c.updatedAt}];save();closeModal('detailModal');renderAll();showToast('✅ อนุมัติแล้ว','success');notifApproved(c);}
+function approveD(id){const c=campaigns.find(x=>x.id===id);if(!c)return;const ownerName=currentOwnerProfile?currentOwnerProfile.name:'Owner';c.status='approved';c.updatedAt=new Date().toISOString();c.history=[...(c.history||[]),{action:'อนุมัติแล้ว',by:ownerName,at:c.updatedAt}];save();closeModal('detailModal');renderAll();showToast('✅ อนุมัติแล้ว','success');notifApproved(c);}
 
 function rejectD(id){
   const c=campaigns.find(x=>x.id===id);if(!c)return;
   const cmt=collectFeedback();
   if(!cmt){showToast('กรุณาเลือกและใส่อย่างน้อย 1 จุดที่ต้องแก้ไข','error');return;}
   c.status='rejected';c.updatedAt=new Date().toISOString();
-  c.history=[...(c.history||[]),{action:'ส่งกลับแก้ไข',by:'Owner',at:c.updatedAt,comment:cmt}];
+  const ownerName=currentOwnerProfile?currentOwnerProfile.name:'Owner';
+  c.history=[...(c.history||[]),{action:'ส่งกลับแก้ไข',by:ownerName,at:c.updatedAt,comment:cmt}];
   save();closeModal('detailModal');renderAll();showToast('↩️ ส่งกลับพร้อมคำแนะนำแล้ว','error');notifRejected(c,cmt);
 }
 function quickSubmit(id){const c=campaigns.find(x=>x.id===id);if(!c)return;c.status='pending';c.updatedAt=new Date().toISOString();c.history=[...(c.history||[]),{action:'ส่งขออนุมัติ',by:'Manager',at:c.updatedAt}];save();renderAll();showToast('📤 ส่งขออนุมัติแล้ว');notifSubmitted(c);}
@@ -1711,7 +1733,7 @@ const NOTIF_DEFAULTS = {
   publicKey: 'FkAmAZnINDf-5V0ok',
   serviceId: 'service_oymwq8y',
   templateId: 'template_yy6e85d',
-  ownerEmail: 'bkny1420@gmail.com',
+  owners: [{ name: 'Bandit', email: 'bkny1420@gmail.com' }],
   managerEmail: 'saffronontheseakohchang@gmail.com',
   deadlineDays: 2,
 };
@@ -1723,23 +1745,41 @@ function getNotifConfig() {
   } catch(e) { return { ...NOTIF_DEFAULTS }; }
 }
 
+function addOwnerRow(name='', email='') {
+  const list = document.getElementById('nf_owners_list');
+  const idx = list.children.length;
+  const row = document.createElement('div');
+  row.style.cssText = 'display:flex;gap:8px;align-items:center;margin-bottom:8px';
+  row.innerHTML = `
+    <input type="text" placeholder="ชื่อ (เช่น Bandit)" value="${name}" data-owner-name style="flex:1;padding:8px 10px;border:1.5px solid #ddd;border-radius:8px;font-size:13px;font-family:inherit">
+    <input type="email" placeholder="อีเมล" value="${email}" data-owner-email style="flex:2;padding:8px 10px;border:1.5px solid #ddd;border-radius:8px;font-size:13px;font-family:inherit">
+    <button type="button" onclick="this.closest('div').remove()" style="flex-shrink:0;width:28px;height:28px;border:none;background:var(--danger-bg);color:var(--danger);border-radius:6px;cursor:pointer;font-size:15px;line-height:1">✕</button>`;
+  list.appendChild(row);
+}
+
 function saveNotifConfig() {
+  const owners = Array.from(document.getElementById('nf_owners_list').children).map(row => ({
+    name: row.querySelector('[data-owner-name]').value.trim(),
+    email: row.querySelector('[data-owner-email]').value.trim(),
+  })).filter(o => o.name && o.email);
+
   const cfg = {
     publicKey: document.getElementById('nf_pubkey').value.trim(),
     serviceId: document.getElementById('nf_svcid').value.trim(),
     templateId: document.getElementById('nf_tmplid').value.trim(),
-    ownerEmail: document.getElementById('nf_owner_email').value.trim(),
+    owners,
     managerEmail: document.getElementById('nf_mgr_email').value.trim(),
     deadlineDays: parseInt(document.getElementById('nf_deadline_days').value) || 2,
   };
   if (!cfg.publicKey || !cfg.serviceId || !cfg.templateId) {
     showToast('กรุณากรอก Public Key, Service ID และ Template ID', 'error'); return;
   }
-  if (!cfg.ownerEmail || !cfg.managerEmail) {
-    showToast('กรุณากรอกอีเมล Owner และ Manager', 'error'); return;
+  if (!owners.length || !cfg.managerEmail) {
+    showToast('กรุณาเพิ่ม Owner อย่างน้อย 1 คน และ Manager', 'error'); return;
   }
   localStorage.setItem(NOTIF_KEY, JSON.stringify(cfg));
   emailjs.init({ publicKey: cfg.publicKey });
+  renderLoginScreen();
   closeModal('notifModal');
   showToast('💾 บันทึกการตั้งค่าแจ้งเตือนแล้ว ✅', 'success');
   updateNotifBtnState();
@@ -1750,9 +1790,12 @@ function openNotifModal() {
   document.getElementById('nf_pubkey').value = cfg.publicKey || '';
   document.getElementById('nf_svcid').value = cfg.serviceId || '';
   document.getElementById('nf_tmplid').value = cfg.templateId || '';
-  document.getElementById('nf_owner_email').value = cfg.ownerEmail || '';
   document.getElementById('nf_mgr_email').value = cfg.managerEmail || '';
   document.getElementById('nf_deadline_days').value = cfg.deadlineDays || 2;
+  const list = document.getElementById('nf_owners_list');
+  list.innerHTML = '';
+  const owners = (cfg.owners && cfg.owners.length) ? cfg.owners : NOTIF_DEFAULTS.owners;
+  owners.forEach(o => addOwnerRow(o.name, o.email));
   document.getElementById('notifTestResult').style.display = 'none';
   document.getElementById('notifModal').style.display = 'flex';
 }
@@ -1761,7 +1804,8 @@ function updateNotifBtnState() {
   const cfg = getNotifConfig();
   const btn = document.getElementById('notifBtn');
   if (!btn) return;
-  const ready = cfg.publicKey && cfg.serviceId && cfg.templateId && cfg.ownerEmail && cfg.managerEmail;
+  const hasOwners = cfg.owners && cfg.owners.length > 0;
+  const ready = cfg.publicKey && cfg.serviceId && cfg.templateId && hasOwners && cfg.managerEmail;
   btn.title = ready ? 'แจ้งเตือนทาง Email ✅' : 'ตั้งค่าการแจ้งเตือน (ยังไม่ได้ตั้งค่า)';
   btn.style.opacity = ready ? '0.9' : '0.4';
 }
@@ -1785,27 +1829,31 @@ async function sendNotif(toEmail, toName, subject, bodyLines) {
 
 function notifSubmitted(campaign, comment='') {
   const cfg = getNotifConfig();
-  if (!cfg.ownerEmail) return;
+  const owners = (cfg.owners && cfg.owners.length) ? cfg.owners : NOTIF_DEFAULTS.owners;
+  if (!owners.length) return;
   const typeLabel = {room:'ห้องพัก',fb:'ร้านอาหาร',package:'Package',longstay:'Long Stay',freeform:'กำหนดเอง'}[campaign.type]||campaign.type;
   const isResubmit = (campaign.history||[]).filter(h=>h.action==='ส่งอีกครั้ง').length > 0;
-  sendNotif(cfg.ownerEmail, 'Owner', `[Saffron Dashboard] ${isResubmit?'↩️ ส่งแก้ไขแล้ว':'📤 ขออนุมัติ'}: ${campaign.name}`, [
-    isResubmit ? `↩️ Manager แก้ไขและส่งกลับมาใหม่แล้ว` : `📤 Manager ส่งขออนุมัติแคมเปญ`,
-    ``,
-    `ชื่อแคมเปญ: ${campaign.name}`,
-    `ประเภท: ${typeLabel}`,
-    `ช่วงเวลา: ${campaign.startDate||'—'} ถึง ${campaign.endDate||'—'}`,
-    campaign.approveBy ? `⚡ Approve ภายใน: ${campaign.approveBy}` : '',
-    comment ? `\nหมายเหตุจาก Manager: "${comment}"` : '',
-    ``,
-    `กรุณาเปิด Dashboard เพื่อตรวจสอบและอนุมัติ`,
-  ]);
+  owners.forEach(o => {
+    sendNotif(o.email, o.name, `[Saffron Dashboard] ${isResubmit?'↩️ ส่งแก้ไขแล้ว':'📤 ขออนุมัติ'}: ${campaign.name}`, [
+      isResubmit ? `↩️ Manager แก้ไขและส่งกลับมาใหม่แล้ว` : `📤 Manager ส่งขออนุมัติแคมเปญ`,
+      ``,
+      `ชื่อแคมเปญ: ${campaign.name}`,
+      `ประเภท: ${typeLabel}`,
+      `ช่วงเวลา: ${campaign.startDate||'—'} ถึง ${campaign.endDate||'—'}`,
+      campaign.approveBy ? `⚡ Approve ภายใน: ${campaign.approveBy}` : '',
+      comment ? `\nหมายเหตุจาก Manager: "${comment}"` : '',
+      ``,
+      `กรุณาเปิด Dashboard เพื่อตรวจสอบและอนุมัติ`,
+    ]);
+  });
 }
 
 function notifApproved(campaign) {
   const cfg = getNotifConfig();
   if (!cfg.managerEmail) return;
+  const ownerName = currentOwnerProfile ? currentOwnerProfile.name : 'Owner';
   sendNotif(cfg.managerEmail, 'Manager', `[Saffron Dashboard] ✅ อนุมัติแล้ว: ${campaign.name}`, [
-    `✅ Owner อนุมัติแคมเปญแล้ว`,
+    `✅ ${ownerName} อนุมัติแคมเปญแล้ว`,
     ``,
     `ชื่อแคมเปญ: ${campaign.name}`,
     `ช่วงเวลา: ${campaign.startDate||'—'} ถึง ${campaign.endDate||'—'}`,
@@ -1818,8 +1866,9 @@ function notifApproved(campaign) {
 function notifRejected(campaign, comment) {
   const cfg = getNotifConfig();
   if (!cfg.managerEmail) return;
+  const ownerName = currentOwnerProfile ? currentOwnerProfile.name : 'Owner';
   sendNotif(cfg.managerEmail, 'Manager', `[Saffron Dashboard] ↩️ ส่งกลับแก้ไข: ${campaign.name}`, [
-    `↩️ Owner ส่งกลับให้แก้ไขแคมเปญ`,
+    `↩️ ${ownerName} ส่งกลับให้แก้ไขแคมเปญ`,
     ``,
     `ชื่อแคมเปญ: ${campaign.name}`,
     comment ? `หมายเหตุจาก Owner: "${comment}"` : '',
@@ -1845,9 +1894,14 @@ async function testNotif() {
     res.textContent = '❌ กรุณากรอกข้อมูลให้ครบก่อนทดสอบ'; return;
   }
   try {
+    const testOwners = Array.from(document.getElementById('nf_owners_list').children).map(row => ({
+      name: row.querySelector('[data-owner-name]').value.trim(),
+      email: row.querySelector('[data-owner-email]').value.trim(),
+    })).filter(o => o.name && o.email);
+    const firstOwner = testOwners[0] || { name: 'Owner', email: cfg.ownerEmail };
     emailjs.init({ publicKey: cfg.publicKey });
     await emailjs.send(cfg.serviceId, cfg.templateId, {
-      to_email: cfg.ownerEmail, to_name: 'Owner',
+      to_email: firstOwner.email, to_name: firstOwner.name,
       subject: '[Saffron Dashboard] ทดสอบการแจ้งเตือน',
       body: 'ระบบแจ้งเตือนทำงานปกติ ✅\n\nอีเมลนี้ถูกส่งจาก Saffron Marketing Dashboard',
     });
@@ -1861,7 +1915,8 @@ async function testNotif() {
 
 function checkDeadlineReminders() {
   const cfg = getNotifConfig();
-  if (!cfg.ownerEmail || !cfg.deadlineDays) return;
+  const owners = (cfg.owners && cfg.owners.length) ? cfg.owners : NOTIF_DEFAULTS.owners;
+  if (!owners.length || !cfg.deadlineDays) return;
   const sent = JSON.parse(localStorage.getItem(NOTIF_SENT_KEY) || '{}');
   const today = new Date(); today.setHours(0,0,0,0);
   campaigns.filter(c => c.status === 'pending' && c.approveBy).forEach(c => {
@@ -1872,14 +1927,14 @@ function checkDeadlineReminders() {
       sent[sentKey] = new Date().toISOString();
       localStorage.setItem(NOTIF_SENT_KEY, JSON.stringify(sent));
       const urgLabel = days === 0 ? 'ต้อง Approve วันนี้!' : `เหลือ ${days} วัน`;
-      sendNotif(cfg.ownerEmail, 'Owner', `[Saffron Dashboard] ⚡ ด่วน! แคมเปญรอ Approve: ${c.name}`, [
+      owners.forEach(o => sendNotif(o.email, o.name, `[Saffron Dashboard] ⚡ ด่วน! แคมเปญรอ Approve: ${c.name}`, [
         `⚡ มีแคมเปญที่รอการอนุมัติและใกล้ถึง Deadline แล้ว`,
         ``,
         `ชื่อแคมเปญ: ${c.name}`,
         `Approve ภายใน: ${c.approveBy} (${urgLabel})`,
         ``,
         `กรุณาเปิด Dashboard เพื่ออนุมัติโดยด่วน`,
-      ]);
+      ]));
     }
   });
 }
@@ -1893,6 +1948,8 @@ if (!campaigns.length) {
   ];
   save();
 }
+
+renderLoginScreen();
 </script>
 </body>
 </html>
