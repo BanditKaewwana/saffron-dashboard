@@ -692,8 +692,10 @@
       </div>
       <div id="notifTestResult" style="display:none;padding:10px 14px;border-radius:8px;font-size:13px;margin-top:8px"></div>
     </div>
-    <div class="modal-footer">
+    </div>
+    <div class="modal-footer" style="flex-wrap:wrap;gap:8px">
       <button class="btn-secondary" onclick="testNotif()">📧 ทดสอบส่ง Email</button>
+      <button class="btn-secondary" id="notifPinBtn" onclick="closeModal('notifModal');openPinModal()" style="display:none">🔐 จัดการ PIN</button>
       <button class="btn-primary" onclick="saveNotifConfig()">💾 บันทึก</button>
     </div>
   </div>
@@ -1933,6 +1935,8 @@ function openNotifModal() {
   const owners = (cfg.owners && cfg.owners.length) ? cfg.owners : NOTIF_DEFAULTS.owners;
   owners.forEach(o => addOwnerRow(o.name, o.email));
   document.getElementById('notifTestResult').style.display = 'none';
+  const pinBtn = document.getElementById('notifPinBtn');
+  if (pinBtn) pinBtn.style.display = currentRole === 'owner' ? '' : 'none';
   document.getElementById('notifModal').style.display = 'flex';
 }
 
