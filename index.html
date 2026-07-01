@@ -741,6 +741,7 @@ let currentSearch = '';
 // ====== FIREBASE CLOUD SYNC ======
 let fbRef = null;
 let pinsRef = null;
+let configRef = null;
 let pinsData = {}; // { "manager": "1234", "Bandit": "5678", ... }
 
 function save() {
@@ -782,6 +783,17 @@ function initFirebase(config) {
     }, err => { setSyncStatus('error', '❌ เชื่อมต่อไม่ได้: ' + err.message); });
     pinsRef = db.ref('sos_pins');
     pinsRef.on('value', snap => { pinsData = snap.val() || {}; });
+    configRef = db.ref('sos_config');
+    configRef.on('value', snap => {
+      const data = snap.val();
+      if (data) {
+        // Merge Firebase config into localStorage (owners + managerEmail + deadlineDays only)
+        const current = JSON.parse(localStorage.getItem(NOTIF_KEY) || '{}');
+        const merged = { ...current, ...data };
+        localStorage.setItem(NOTIF_KEY, JSON.stringify(merged));
+        renderLoginScreen(); // update login buttons if owners changed
+      }
+    });
     return true;
   } catch(e) { setSyncStatus('error', '❌ Config ไม่ถูกต้อง: ' + e.message); return false; }
 }
@@ -1925,6 +1937,11 @@ function saveNotifConfig() {
     showToast('กรุณาเพิ่ม Owner อย่างน้อย 1 คน และ Manager', 'error'); return;
   }
   localStorage.setItem(NOTIF_KEY, JSON.stringify(cfg));
+  // Sync owners + managerEmail + deadlineDays to Firebase so all devices get updated
+  if (configRef) {
+    configRef.set({ owners: cfg.owners, managerEmail: cfg.managerEmail, deadlineDays: cfg.deadlineDays })
+      .catch(e => console.warn('Config sync error:', e));
+  }
   emailjs.init({ publicKey: cfg.publicKey });
   renderLoginScreen();
   closeModal('notifModal');
