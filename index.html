@@ -1879,7 +1879,16 @@ const NOTIF_DEFAULTS = {
 function getNotifConfig() {
   try {
     const saved = JSON.parse(localStorage.getItem(NOTIF_KEY) || '{}');
-    return { ...NOTIF_DEFAULTS, ...saved };
+    // EmailJS credentials always use hardcoded defaults — never let stale localStorage override them
+    return {
+      ...saved,
+      publicKey: NOTIF_DEFAULTS.publicKey,
+      serviceId: NOTIF_DEFAULTS.serviceId,
+      templateId: NOTIF_DEFAULTS.templateId,
+      owners: (saved.owners && saved.owners.length) ? saved.owners : NOTIF_DEFAULTS.owners,
+      managerEmail: saved.managerEmail || NOTIF_DEFAULTS.managerEmail,
+      deadlineDays: saved.deadlineDays || NOTIF_DEFAULTS.deadlineDays,
+    };
   } catch(e) { return { ...NOTIF_DEFAULTS }; }
 }
 
