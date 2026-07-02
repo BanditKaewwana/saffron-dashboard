@@ -2,7 +2,7 @@
 <html lang="th">
 <head>
 <meta charset="UTF-8">
-<meta name="version" content="2026-07-01-v4">
+<meta name="version" content="2026-07-02-v1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Saffron On The Sea — Marketing Dashboard</title>
 <style>
@@ -329,9 +329,13 @@
     <!-- CAMPAIGNS PAGE -->
     <div class="page active" id="page-campaigns">
       <div class="summary-grid" id="summaryGrid"></div>
+      <div id="taskBanner"></div>
       <div class="section-header">
         <h2 class="section-title">แคมเปญทั้งหมด</h2>
-        <button class="btn-primary" onclick="openCreateModal()">+ สร้างแคมเปญใหม่</button>
+        <div style="display:flex;gap:8px">
+          <button class="btn-secondary" id="btnCreateTask" style="display:none" onclick="openTaskModal()">📋 มอบหมาย Task</button>
+          <button class="btn-primary" onclick="openCreateModal()">+ สร้างแคมเปญใหม่</button>
+        </div>
       </div>
       <div class="toolbar">
         <div class="filter-group">
@@ -634,6 +638,39 @@
 </div>
 
 <!-- NOTIFICATION SETTINGS MODAL -->
+<div class="modal-overlay" id="taskModal" style="display:none" onclick="closeIfOverlay(event,'taskModal')">
+  <div class="modal" style="max-width:560px">
+    <div class="modal-header">
+      <span class="modal-title">📋 มอบหมาย Task ให้ทีม</span>
+      <button class="modal-close" onclick="closeModal('taskModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="margin-bottom:14px">
+        <label style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px">เป้าหมายของแคมเปญที่ต้องการ *</label>
+        <input id="task_goal" type="text" style="width:100%;margin-top:6px;padding:10px 12px;border:1.5px solid var(--saffron);border-radius:8px;font-size:14px;font-family:inherit;box-sizing:border-box" placeholder="เช่น: เพิ่มจำนวน Follower ใน Line Official, เพิ่ม Google Review">
+      </div>
+      <div style="margin-bottom:14px">
+        <label style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px">รายละเอียด / ความต้องการเพิ่มเติม</label>
+        <textarea id="task_detail" style="width:100%;margin-top:6px;min-height:80px;padding:10px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;resize:vertical;box-sizing:border-box" placeholder="เช่น: อยากได้แคมเปญที่ให้ลูกค้ากด Follow แล้วได้ส่วนลด 10% / ต้องการ 50+ reviews ภายในเดือน ส.ค."></textarea>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
+        <div>
+          <label style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px">ช่องทางที่สนใจ</label>
+          <input id="task_channel" type="text" style="width:100%;margin-top:6px;padding:10px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;box-sizing:border-box" placeholder="เช่น: Line, Google, Instagram">
+        </div>
+        <div>
+          <label style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px">Deadline ส่งแนวคิด</label>
+          <input id="task_deadline" type="date" style="width:100%;margin-top:6px;padding:10px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;box-sizing:border-box">
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeModal('taskModal')">ยกเลิก</button>
+      <button class="btn-primary" onclick="saveTask()">📋 ส่ง Task ให้ทีม</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="ownerReviewModal" style="display:none" onclick="closeIfOverlay(event,'ownerReviewModal')">
   <div class="modal" style="max-width:700px">
     <div class="modal-header">
@@ -758,7 +795,9 @@ let currentSearch = '';
 let fbRef = null;
 let pinsRef = null;
 let configRef = null;
-let pinsData = {}; // { "manager": "1234", "Bandit": "5678", ... }
+let tasksRef = null;
+let pinsData = {};
+let teamTasks = []; // { "manager": "1234", "Bandit": "5678", ... }
 
 function save() {
   localStorage.setItem('sos_v3', JSON.stringify(campaigns));
@@ -799,6 +838,8 @@ function initFirebase(config) {
     }, err => { setSyncStatus('error', '❌ เชื่อมต่อไม่ได้: ' + err.message); });
     pinsRef = db.ref('sos_pins');
     pinsRef.on('value', snap => { pinsData = snap.val() || {}; });
+    tasksRef = db.ref('sos_tasks');
+    tasksRef.on('value', snap => { teamTasks = Object.values(snap.val() || {}); renderTaskBanner(); });
     configRef = db.ref('sos_config');
     configRef.on('value', snap => {
       const data = snap.val();
@@ -951,6 +992,8 @@ function doLogin(role, ownerIndex) {
   renderAll();
   updateNotifBtnState();
   updatePinBtnVisibility();
+  updateTaskBtn();
+  renderTaskBanner();
   setTimeout(checkDeadlineReminders, 2000);
   const n = campaigns.filter(c => c.status === 'pending').length;
   if (role === 'owner' && n > 0) showToast(`มี ${n} แคมเปญรออนุมัติ`, 'error');
@@ -1859,6 +1902,78 @@ function fillRoomGrid(rooms) {
 // ====== OWNER REVIEW FORM ======
 let _reviewingId = null;
 
+// ─── TEAM TASKS ───────────────────────────────────────────────
+function openTaskModal() {
+  ['task_goal','task_detail','task_channel','task_deadline'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
+  document.getElementById('taskModal').style.display = 'flex';
+}
+
+function saveTask() {
+  const goal = document.getElementById('task_goal').value.trim();
+  if (!goal) { showToast('กรุณาระบุเป้าหมายของแคมเปญ', 'error'); document.getElementById('task_goal').focus(); return; }
+  const task = {
+    id: 'task_' + Date.now(),
+    goal,
+    detail: document.getElementById('task_detail').value.trim(),
+    channel: document.getElementById('task_channel').value.trim(),
+    deadline: document.getElementById('task_deadline').value,
+    status: 'open',
+    createdBy: currentOwnerProfile ? currentOwnerProfile.name : 'Owner',
+    createdAt: new Date().toISOString(),
+  };
+  if (tasksRef) {
+    tasksRef.child(task.id).set(task).then(() => {
+      showToast('📋 ส่ง Task ให้ทีมแล้ว', 'success');
+      closeModal('taskModal');
+    }).catch(e => showToast('Error: ' + e.message, 'error'));
+  } else {
+    teamTasks.push(task);
+    showToast('📋 บันทึก Task แล้ว (ไม่มี Firebase)', 'success');
+    closeModal('taskModal');
+    renderTaskBanner();
+  }
+}
+
+function closeTask(id) {
+  if (tasksRef) tasksRef.child(id).update({ status: 'done' });
+  else { const t = teamTasks.find(x => x.id === id); if (t) { t.status = 'done'; renderTaskBanner(); } }
+}
+
+function renderTaskBanner() {
+  const el = document.getElementById('taskBanner'); if (!el) return;
+  const open = teamTasks.filter(t => t.status === 'open');
+  if (!open.length) { el.innerHTML = ''; return; }
+  const fmtD = d => d ? new Date(d).toLocaleDateString('th-TH',{day:'numeric',month:'short'}) : '';
+  const isOwner = currentRole === 'owner';
+  const cards = open.map(t => {
+    const dl = t.deadline ? ` · ส่งภายใน ${fmtD(t.deadline)}` : '';
+    const ch = t.channel ? ` · ${t.channel}` : '';
+    const detail = t.detail ? `<div style="font-size:12px;color:#555;margin-top:4px;line-height:1.5">${t.detail}</div>` : '';
+    const doneBtn = isOwner ? `<button onclick="closeTask('${t.id}')" style="flex-shrink:0;background:none;border:1px solid #bbb;border-radius:6px;padding:3px 10px;font-size:11px;cursor:pointer;color:#666">✓ เสร็จแล้ว</button>` : '';
+    return `<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;background:#fff;border:1.5px solid #f5c518;border-radius:8px;padding:10px 14px;margin-bottom:8px">
+      <div>
+        <div style="font-weight:700;font-size:13px">📋 ${t.goal}<span style="font-weight:400;font-size:12px;color:#888">${ch}${dl}</span></div>
+        ${detail}
+        <div style="font-size:11px;color:#aaa;margin-top:4px">มอบหมายโดย ${t.createdBy}</div>
+      </div>
+      ${doneBtn}
+    </div>`;
+  }).join('');
+  el.innerHTML = `<div style="margin-bottom:16px">
+    <div style="font-size:11px;font-weight:700;color:#b8860b;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">📋 Task จาก Owner (${open.length})</div>
+    ${cards}
+  </div>`;
+}
+
+// show/hide task button based on role
+function updateTaskBtn() {
+  const btn = document.getElementById('btnCreateTask');
+  if (btn) btn.style.display = currentRole === 'owner' ? '' : 'none';
+}
+
+// ─── OWNER REVIEW ─────────────────────────────────────────────
 function openOwnerReview(id) {
   const c = campaigns.find(x => x.id === id); if (!c) return;
   _reviewingId = id;
@@ -1902,6 +2017,10 @@ function openOwnerReview(id) {
   const lsPriceDisplay = c.lsPromo ? `฿${Number(c.lsPromo).toLocaleString()} (จาก ฿${Number(c.lsOrig||0).toLocaleString()})` : '—';
 
   let fields = `
+    <div style="background:#fff8e1;border:1.5px solid #f5c518;border-radius:10px;padding:14px 16px;margin-bottom:18px">
+      <div style="font-size:12px;font-weight:700;color:#b8860b;margin-bottom:8px">⚠️ เหตุผลที่ไม่อนุมัติ / ภาพรวมความเห็น <span style="font-weight:400;color:#999">(กรอกก่อนเสมอ)</span></div>
+      <textarea id="or_rejectReason" style="width:100%;min-height:72px;border:1.5px solid #f5c518;border-radius:6px;padding:10px;font-size:13px;font-family:inherit;resize:vertical;box-sizing:border-box;background:#fffdf0" placeholder="เช่น: ราคายังสูงเกินไปสำหรับ Low Season / Concept ยังไม่ตรงกลุ่มเป้าหมาย / ต้องการเพิ่มช่องทางโปรโมต...">${prev._rejectReason||''}</textarea>
+    </div>
     <div style="background:var(--sea-light);border-radius:8px;padding:10px 14px;font-size:12px;color:var(--sea);margin-bottom:18px">
       ✏️ ใส่ค่าที่ต้องการแก้ไขในช่องขวา — ถ้าไม่มีความเห็นในหัวข้อนั้น ปล่อยว่างได้เลย
     </div>
@@ -1931,6 +2050,8 @@ function submitOwnerReview(action) {
 
   // Collect all filled corrections
   const corrections = {};
+  const rejectReasonEl = document.getElementById('or_rejectReason');
+  const rejectReason = rejectReasonEl ? rejectReasonEl.value.trim() : '';
   const fields = ['name','desc','price','lsPrice','ffPricing','dates','launchDate','channels','includes','terms','notes','_generalNote'];
   fields.forEach(f => {
     const el = document.getElementById('or_'+f);
@@ -1941,14 +2062,16 @@ function submitOwnerReview(action) {
   delete corrections._generalNote;
   const correctionCount = Object.keys(corrections).length;
 
-  const summaryLines = Object.entries(corrections).map(([f,v]) => {
+  const summaryLines = [];
+  if (rejectReason) summaryLines.push(`⚠️ เหตุผล: ${rejectReason}`);
+  Object.entries(corrections).forEach(([f,v]) => {
     const labels = {name:'ชื่อแคมเปญ',desc:'คำอธิบาย',price:'ราคา',lsPrice:'ราคา Long Stay',ffPricing:'โครงสร้างราคา',dates:'ช่วงเวลา',launchDate:'วัน Launch',channels:'ช่องทาง',includes:'รายการรวม',terms:'เงื่อนไข',notes:'หมายเหตุ'};
-    return `• ${labels[f]||f}: ${v}`;
+    summaryLines.push(`• ${labels[f]||f}: ${v}`);
   });
   if (generalNote) summaryLines.push(`• หมายเหตุรวม: ${generalNote}`);
   const commentText = summaryLines.join('\n');
 
-  c.ownerCorrections = { ...corrections, _generalNote: generalNote };
+  c.ownerCorrections = { ...corrections, _generalNote: generalNote, _rejectReason: rejectReason };
   c.updatedAt = new Date().toISOString();
 
   if (action === 'approve') {
@@ -1958,8 +2081,9 @@ function submitOwnerReview(action) {
     showToast('✅ อนุมัติแล้ว', 'success');
     notifApproved(c);
   } else {
-    if (correctionCount === 0 && !generalNote) {
-      showToast('กรุณาใส่ความเห็นอย่างน้อย 1 จุด หรือกด ✅ อนุมัติเลย', 'error'); return;
+    if (!rejectReason) {
+      showToast('กรุณากรอกเหตุผลที่ไม่อนุมัติก่อน', 'error');
+      document.getElementById('or_rejectReason').focus(); return;
     }
     c.status = 'rejected';
     c.history = [...(c.history||[]), {action:'ส่งกลับแก้ไข', by:ownerName, at:c.updatedAt, comment: commentText}];
