@@ -2,7 +2,7 @@
 <html lang="th">
 <head>
 <meta charset="UTF-8">
-<meta name="version" content="2026-07-02-v3">
+<meta name="version" content="2026-07-02-v4">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Saffron On The Sea — Marketing Dashboard</title>
 <style>
@@ -1908,37 +1908,54 @@ function fillRoomGrid(rooms) {
 let _reviewingId = null;
 
 // ─── TEAM TASKS ───────────────────────────────────────────────
-function openTaskModal() {
-  ['task_goal','task_detail','task_assign','task_channel','task_deadline'].forEach(id => {
-    const el = document.getElementById(id); if (el) el.value = '';
-  });
+let _editingTaskId = null;
+
+function openTaskModal(editId) {
+  _editingTaskId = editId || null;
+  const t = editId ? teamTasks.find(x => x.id === editId) : null;
+  const set = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
+  set('task_goal',     t ? t.goal     : '');
+  set('task_detail',   t ? t.detail   : '');
+  set('task_assign',   t ? t.assign   : '');
+  set('task_channel',  t ? t.channel  : '');
+  set('task_deadline', t ? t.deadline : '');
+  const title = document.querySelector('#taskModal .modal-title');
+  if (title) title.textContent = t ? '✏️ แก้ไข Task' : '📋 มอบหมาย Task ให้ทีม';
+  const saveBtn = document.querySelector('#taskModal .btn-primary');
+  if (saveBtn) saveBtn.textContent = t ? '💾 บันทึกการแก้ไข' : '📋 ส่ง Task ให้ทีม';
   document.getElementById('taskModal').style.display = 'flex';
 }
 
 function saveTask() {
   const goal = document.getElementById('task_goal').value.trim();
   if (!goal) { showToast('กรุณาระบุเป้าหมายของแคมเปญ', 'error'); document.getElementById('task_goal').focus(); return; }
-  const task = {
-    id: 'task_' + Date.now(),
+  const updates = {
     goal,
     detail: document.getElementById('task_detail').value.trim(),
     assign: document.getElementById('task_assign').value.trim(),
     channel: document.getElementById('task_channel').value.trim(),
     deadline: document.getElementById('task_deadline').value,
-    status: 'open',
-    createdBy: currentOwnerProfile ? currentOwnerProfile.name : 'Owner',
-    createdAt: new Date().toISOString(),
   };
-  if (tasksRef) {
-    tasksRef.child(task.id).set(task).then(() => {
-      showToast('📋 ส่ง Task ให้ทีมแล้ว', 'success');
-      closeModal('taskModal');
-    }).catch(e => showToast('Error: ' + e.message, 'error'));
+  if (_editingTaskId) {
+    if (tasksRef) {
+      tasksRef.child(_editingTaskId).update(updates).then(() => {
+        showToast('✅ แก้ไข Task แล้ว', 'success'); closeModal('taskModal');
+      }).catch(e => showToast('Error: ' + e.message, 'error'));
+    } else {
+      const t = teamTasks.find(x => x.id === _editingTaskId);
+      if (t) Object.assign(t, updates);
+      showToast('✅ แก้ไข Task แล้ว', 'success'); closeModal('taskModal'); renderTaskBanner();
+    }
   } else {
-    teamTasks.push(task);
-    showToast('📋 บันทึก Task แล้ว (ไม่มี Firebase)', 'success');
-    closeModal('taskModal');
-    renderTaskBanner();
+    const task = { id: 'task_' + Date.now(), ...updates, status: 'open', createdBy: currentOwnerProfile ? currentOwnerProfile.name : 'Owner', createdAt: new Date().toISOString() };
+    if (tasksRef) {
+      tasksRef.child(task.id).set(task).then(() => {
+        showToast('📋 ส่ง Task ให้ทีมแล้ว', 'success'); closeModal('taskModal');
+      }).catch(e => showToast('Error: ' + e.message, 'error'));
+    } else {
+      teamTasks.push(task);
+      showToast('📋 บันทึก Task แล้ว', 'success'); closeModal('taskModal'); renderTaskBanner();
+    }
   }
 }
 
@@ -1958,7 +1975,10 @@ function renderTaskBanner() {
     const ch = t.channel ? ` · ${t.channel}` : '';
     const assignTo = t.assign ? `<span style="background:#fef3c7;color:#92400e;border-radius:4px;padding:1px 7px;font-size:11px;font-weight:600;margin-left:6px">👤 ${t.assign}</span>` : '';
     const detail = t.detail ? `<div style="font-size:12px;color:#444;margin-top:8px;line-height:1.8;white-space:pre-wrap;background:#fafafa;border-radius:6px;padding:8px 10px;border-left:3px solid #f5c518">${t.detail}</div>` : '';
-    const doneBtn = isOwner ? `<button onclick="closeTask('${t.id}')" style="flex-shrink:0;background:none;border:1px solid #bbb;border-radius:6px;padding:3px 10px;font-size:11px;cursor:pointer;color:#666">✓ เสร็จแล้ว</button>` : '';
+    const doneBtn = isOwner ? `<div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0">
+      <button onclick="openTaskModal('${t.id}')" style="background:none;border:1px solid var(--saffron);border-radius:6px;padding:3px 10px;font-size:11px;cursor:pointer;color:var(--saffron-deep)">✏️ แก้ไข</button>
+      <button onclick="closeTask('${t.id}')" style="background:none;border:1px solid #bbb;border-radius:6px;padding:3px 10px;font-size:11px;cursor:pointer;color:#666">✓ เสร็จแล้ว</button>
+    </div>` : '';
     return `<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;background:#fff;border:1.5px solid #f5c518;border-radius:8px;padding:12px 14px;margin-bottom:8px">
       <div style="flex:1;min-width:0">
         <div style="font-weight:700;font-size:13px;display:flex;align-items:center;flex-wrap:wrap;gap:4px">📋 ${t.goal}${assignTo}<span style="font-weight:400;font-size:12px;color:#888">${ch}${dl}</span></div>
