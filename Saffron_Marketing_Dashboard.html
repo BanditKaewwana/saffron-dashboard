@@ -2,7 +2,7 @@
 <html lang="th">
 <head>
 <meta charset="UTF-8">
-<meta name="version" content="2026-07-02-v2">
+<meta name="version" content="2026-07-02-v3">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Saffron On The Sea — Marketing Dashboard</title>
 <style>
@@ -651,7 +651,11 @@
       </div>
       <div style="margin-bottom:14px">
         <label style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px">รายละเอียด / ความต้องการเพิ่มเติม</label>
-        <textarea id="task_detail" style="width:100%;margin-top:6px;min-height:80px;padding:10px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;resize:vertical;box-sizing:border-box" placeholder="เช่น: อยากได้แคมเปญที่ให้ลูกค้ากด Follow แล้วได้ส่วนลด 10% / ต้องการ 50+ reviews ภายในเดือน ส.ค."></textarea>
+        <textarea id="task_detail" style="width:100%;margin-top:6px;min-height:100px;padding:10px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;resize:vertical;box-sizing:border-box" placeholder="เขียนได้เลยทีละบรรทัด เช่น:&#10;- ลูกค้า Follow Line OA แล้วได้ส่วนลด 10%&#10;- ต้องการ 50+ reviews ภายในเดือน ส.ค.&#10;- งบประมาณไม่เกิน 5,000 บาท"></textarea>
+      </div>
+      <div style="margin-bottom:14px">
+        <label style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px">มอบหมายให้ <span style="font-weight:400;text-transform:none">(ระบุชื่อหรือตำแหน่ง)</span></label>
+        <input id="task_assign" type="text" style="width:100%;margin-top:6px;padding:10px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;box-sizing:border-box" placeholder="เช่น: Manager, ทีม Marketing, คุณแนน">
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
         <div>
@@ -1905,7 +1909,7 @@ let _reviewingId = null;
 
 // ─── TEAM TASKS ───────────────────────────────────────────────
 function openTaskModal() {
-  ['task_goal','task_detail','task_channel','task_deadline'].forEach(id => {
+  ['task_goal','task_detail','task_assign','task_channel','task_deadline'].forEach(id => {
     const el = document.getElementById(id); if (el) el.value = '';
   });
   document.getElementById('taskModal').style.display = 'flex';
@@ -1918,6 +1922,7 @@ function saveTask() {
     id: 'task_' + Date.now(),
     goal,
     detail: document.getElementById('task_detail').value.trim(),
+    assign: document.getElementById('task_assign').value.trim(),
     channel: document.getElementById('task_channel').value.trim(),
     deadline: document.getElementById('task_deadline').value,
     status: 'open',
@@ -1951,13 +1956,14 @@ function renderTaskBanner() {
   const cards = open.map(t => {
     const dl = t.deadline ? ` · ส่งภายใน ${fmtD(t.deadline)}` : '';
     const ch = t.channel ? ` · ${t.channel}` : '';
-    const detail = t.detail ? `<div style="font-size:12px;color:#555;margin-top:4px;line-height:1.5">${t.detail}</div>` : '';
+    const assignTo = t.assign ? `<span style="background:#fef3c7;color:#92400e;border-radius:4px;padding:1px 7px;font-size:11px;font-weight:600;margin-left:6px">👤 ${t.assign}</span>` : '';
+    const detail = t.detail ? `<div style="font-size:12px;color:#444;margin-top:8px;line-height:1.8;white-space:pre-wrap;background:#fafafa;border-radius:6px;padding:8px 10px;border-left:3px solid #f5c518">${t.detail}</div>` : '';
     const doneBtn = isOwner ? `<button onclick="closeTask('${t.id}')" style="flex-shrink:0;background:none;border:1px solid #bbb;border-radius:6px;padding:3px 10px;font-size:11px;cursor:pointer;color:#666">✓ เสร็จแล้ว</button>` : '';
-    return `<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;background:#fff;border:1.5px solid #f5c518;border-radius:8px;padding:10px 14px;margin-bottom:8px">
-      <div>
-        <div style="font-weight:700;font-size:13px">📋 ${t.goal}<span style="font-weight:400;font-size:12px;color:#888">${ch}${dl}</span></div>
+    return `<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;background:#fff;border:1.5px solid #f5c518;border-radius:8px;padding:12px 14px;margin-bottom:8px">
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:700;font-size:13px;display:flex;align-items:center;flex-wrap:wrap;gap:4px">📋 ${t.goal}${assignTo}<span style="font-weight:400;font-size:12px;color:#888">${ch}${dl}</span></div>
         ${detail}
-        <div style="font-size:11px;color:#aaa;margin-top:4px">มอบหมายโดย ${t.createdBy}</div>
+        <div style="font-size:11px;color:#aaa;margin-top:6px">มอบหมายโดย ${t.createdBy}</div>
       </div>
       ${doneBtn}
     </div>`;
