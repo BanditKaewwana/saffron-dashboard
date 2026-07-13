@@ -2,7 +2,7 @@
 <html lang="th">
 <head>
 <meta charset="UTF-8">
-<meta name="version" content="2026-07-02-v4">
+<meta name="version" content="2026-07-02-v5">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Saffron On The Sea — Marketing Dashboard</title>
 <style>
@@ -323,6 +323,7 @@
   <div class="nav-tabs">
     <button class="nav-tab active" onclick="showPage('campaigns',this)">📋 แคมเปญ <span class="nbadge" id="pendingBadge" style="display:none"></span></button>
     <button class="nav-tab" onclick="showPage('pricing',this)">💰 ราคาห้องพัก</button>
+    <button class="nav-tab" onclick="showPage('calendar',this)">📅 Content Calendar</button>
   </div>
 
   <main>
@@ -447,7 +448,99 @@
         </div>
       </div>
     </div>
+    <!-- CONTENT CALENDAR PAGE -->
+    <div class="page" id="page-calendar">
+      <div class="section-header">
+        <h2 class="section-title">📅 Content Calendar</h2>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button class="btn-icon" id="calPrevWeek" onclick="changeWeek(-1)" style="font-size:18px;padding:4px 10px;background:white;border:1px solid var(--border);border-radius:8px;cursor:pointer">‹</button>
+          <span id="calWeekLabel" style="font-size:13px;font-weight:600;color:var(--text);min-width:160px;text-align:center"></span>
+          <button class="btn-icon" id="calNextWeek" onclick="changeWeek(1)" style="font-size:18px;padding:4px 10px;background:white;border:1px solid var(--border);border-radius:8px;cursor:pointer">›</button>
+          <button class="btn-secondary" onclick="goToThisWeek()" style="font-size:12px;padding:6px 14px">สัปดาห์นี้</button>
+          <button class="btn-primary" onclick="openPostModal()" id="btnAddPost">+ เพิ่ม Post</button>
+        </div>
+      </div>
+
+      <!-- Legend -->
+      <div style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap">
+        <span style="display:flex;align-items:center;gap:5px;font-size:12px"><span style="width:12px;height:12px;border-radius:3px;background:#E1306C;display:inline-block"></span>Instagram</span>
+        <span style="display:flex;align-items:center;gap:5px;font-size:12px"><span style="width:12px;height:12px;border-radius:3px;background:#010101;display:inline-block"></span>TikTok</span>
+        <span style="display:flex;align-items:center;gap:5px;font-size:12px"><span style="width:12px;height:12px;border-radius:3px;background:#4caf50;display:inline-block"></span>Both</span>
+        <span style="margin-left:auto;display:flex;gap:8px;align-items:center;font-size:12px;color:var(--muted)">
+          <span>⭐ = วันแนะนำ</span>
+        </span>
+      </div>
+
+      <!-- Weekly Grid -->
+      <div id="calGrid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:8px;min-height:400px"></div>
+    </div>
   </main>
+
+  <!-- POST MODAL -->
+  <div class="modal-overlay" id="postModal" style="display:none" onclick="closeIfOverlay(event,'postModal')">
+    <div class="modal" style="max-width:500px">
+      <div class="modal-header">
+        <span class="modal-title" id="postModalTitle">➕ เพิ่ม Post</span>
+        <button class="modal-close" onclick="closeModal('postModal')">✕</button>
+      </div>
+      <div class="modal-body">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
+          <div>
+            <label style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px">วันที่ *</label>
+            <input id="post_date" type="date" style="width:100%;margin-top:6px;padding:10px 12px;border:1.5px solid var(--saffron);border-radius:8px;font-size:13px;font-family:inherit;box-sizing:border-box">
+          </div>
+          <div>
+            <label style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px">เวลา</label>
+            <input id="post_time" type="time" style="width:100%;margin-top:6px;padding:10px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;box-sizing:border-box">
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
+          <div>
+            <label style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px">Platform *</label>
+            <select id="post_platform" style="width:100%;margin-top:6px;padding:10px 12px;border:1.5px solid var(--saffron);border-radius:8px;font-size:13px;font-family:inherit;box-sizing:border-box">
+              <option value="instagram">📸 Instagram</option>
+              <option value="tiktok">🎵 TikTok</option>
+              <option value="both">✨ Both (IG + TikTok)</option>
+            </select>
+          </div>
+          <div>
+            <label style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px">ประเภท Content</label>
+            <select id="post_type" style="width:100%;margin-top:6px;padding:10px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;box-sizing:border-box">
+              <option value="sunset">🌅 Sunset / View</option>
+              <option value="food">🍽️ ร้านอาหาร</option>
+              <option value="room">🛏️ ห้องพัก</option>
+              <option value="vibe">✨ บรรยากาศ / ผู้คน</option>
+              <option value="promo">🎯 โปรโมชั่น</option>
+              <option value="bts">🎬 Behind the Scenes</option>
+            </select>
+          </div>
+        </div>
+        <div style="margin-bottom:14px">
+          <label style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px">Caption / หมายเหตุ</label>
+          <textarea id="post_caption" style="width:100%;margin-top:6px;min-height:80px;padding:10px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;resize:vertical;box-sizing:border-box" placeholder="ไอเดีย caption หรือโน้ตสำหรับ content นี้..."></textarea>
+        </div>
+        <div style="margin-bottom:14px">
+          <label style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px">เชื่อมกับแคมเปญ</label>
+          <select id="post_campaign" style="width:100%;margin-top:6px;padding:10px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;box-sizing:border-box">
+            <option value="">— ไม่เชื่อมกับแคมเปญ —</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px">สถานะ</label>
+          <select id="post_status" style="width:100%;margin-top:6px;padding:10px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;box-sizing:border-box">
+            <option value="planned">📝 วางแผนแล้ว</option>
+            <option value="posted">✅ โพสต์แล้ว</option>
+            <option value="skipped">⏭️ ข้าม</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" onclick="closeModal('postModal')">ยกเลิก</button>
+        <button id="postDeleteBtn" class="btn-reject" style="display:none" onclick="deletePost()">🗑️ ลบ</button>
+        <button class="btn-primary" onclick="savePost()">💾 บันทึก</button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- TOAST -->
@@ -801,8 +894,11 @@ let fbRef = null;
 let pinsRef = null;
 let configRef = null;
 let tasksRef = null;
+let calRef = null;
 let pinsData = {};
-let teamTasks = []; // { "manager": "1234", "Bandit": "5678", ... }
+let teamTasks = [];
+let calPosts = [];
+let calWeekOffset = 0; // { "manager": "1234", "Bandit": "5678", ... }
 
 function save() {
   localStorage.setItem('sos_v3', JSON.stringify(campaigns));
@@ -845,6 +941,8 @@ function initFirebase(config) {
     pinsRef.on('value', snap => { pinsData = snap.val() || {}; });
     tasksRef = db.ref('sos_tasks');
     tasksRef.on('value', snap => { teamTasks = Object.values(snap.val() || {}); renderTaskBanner(); });
+    calRef = db.ref('sos_calendar');
+    calRef.on('value', snap => { calPosts = Object.values(snap.val() || {}); renderCalendar(); });
     configRef = db.ref('sos_config');
     configRef.on('value', snap => {
       const data = snap.val();
@@ -999,6 +1097,7 @@ function doLogin(role, ownerIndex) {
   updatePinBtnVisibility();
   updateTaskBtn();
   renderTaskBanner();
+  renderCalendar();
   setTimeout(checkDeadlineReminders, 2000);
   const n = campaigns.filter(c => c.status === 'pending').length;
   if (role === 'owner' && n > 0) showToast(`มี ${n} แคมเปญรออนุมัติ`, 'error');
@@ -1906,6 +2005,163 @@ function fillRoomGrid(rooms) {
 
 // ====== OWNER REVIEW FORM ======
 let _reviewingId = null;
+
+// ─── CONTENT CALENDAR ─────────────────────────────────────────
+const RECOMMENDED = {
+  1: [{time:'11:00',platform:'instagram',note:'Peak กลางสัปดาห์'},{time:'19:00',platform:'tiktok',note:'Engagement สูง'}],
+  2: [{time:'19:00',platform:'instagram',note:'Peak IG พุธ'},{time:'13:00',platform:'tiktok',note:'Lunch scroll'}],
+  3: [{time:'19:00',platform:'both',note:'⭐ วันที่ดีที่สุด'},{time:'20:00',platform:'tiktok',note:'Watch time สูงสุด'}],
+  4: [{time:'11:00',platform:'instagram',note:'Pre-weekend mood'},{time:'18:00',platform:'tiktok',note:'TGIF scroll'}],
+  5: [],
+  6: [{time:'09:00',platform:'tiktok',note:'Weekend morning browse'}],
+  0: [{time:'18:00',platform:'instagram',note:'Sunday wind-down'}],
+};
+
+const DAY_TH = ['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัส','ศุกร์','เสาร์'];
+const DAY_SHORT = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const PLATFORM_COLOR = {instagram:'#E1306C', tiktok:'#010101', both:'#4caf50'};
+const PLATFORM_LABEL = {instagram:'IG', tiktok:'TT', both:'IG+TT'};
+const TYPE_ICON = {sunset:'🌅',food:'🍽️',room:'🛏️',vibe:'✨',promo:'🎯',bts:'🎬'};
+const STATUS_STYLE = {
+  planned:'background:#f0f0f0;color:#555',
+  posted:'background:#e8f5e9;color:#2e7d32',
+  skipped:'background:#f5f5f5;color:#bbb;text-decoration:line-through',
+};
+
+let _editingPostId = null;
+
+function getWeekDates(offset) {
+  const now = new Date();
+  const day = now.getDay();
+  const monday = new Date(now);
+  monday.setDate(now.getDate() - (day === 0 ? 6 : day - 1) + offset * 7);
+  monday.setHours(0,0,0,0);
+  return Array.from({length:7}, (_,i) => { const d = new Date(monday); d.setDate(monday.getDate()+i); return d; });
+}
+
+function fmtISO(d) { return d.toISOString().slice(0,10); }
+
+function changeWeek(dir) { calWeekOffset += dir; renderCalendar(); }
+function goToThisWeek() { calWeekOffset = 0; renderCalendar(); }
+
+function renderCalendar() {
+  const grid = document.getElementById('calGrid'); if (!grid) return;
+  const label = document.getElementById('calWeekLabel');
+  const days = getWeekDates(calWeekOffset);
+  const todayStr = fmtISO(new Date());
+
+  if (label) {
+    const opts = {day:'numeric',month:'short'};
+    label.textContent = days[0].toLocaleDateString('th-TH',opts) + ' – ' + days[6].toLocaleDateString('th-TH',opts);
+  }
+
+  grid.innerHTML = days.map(d => {
+    const iso = fmtISO(d);
+    const dow = d.getDay();
+    const isToday = iso === todayStr;
+    const recs = RECOMMENDED[dow] || [];
+    const posts = calPosts.filter(p => p.date === iso).sort((a,b)=>(a.time||'').localeCompare(b.time||''));
+    const hasStar = recs.length > 0;
+
+    const recHints = recs.map(r => `
+      <div style="font-size:10px;color:#b8860b;background:#fffbea;border-radius:4px;padding:2px 6px;margin-bottom:3px;cursor:pointer" onclick="openPostModal('${iso}','${r.time}','${r.platform}')" title="คลิกเพื่อเพิ่ม post">
+        ⭐ ${r.time} ${PLATFORM_LABEL[r.platform]} <span style="color:#aaa">${r.note}</span>
+      </div>`).join('');
+
+    const postCards = posts.map(p => {
+      const color = PLATFORM_COLOR[p.platform] || '#888';
+      const icon = TYPE_ICON[p.type] || '📄';
+      const ss = STATUS_STYLE[p.status] || STATUS_STYLE.planned;
+      return `<div style="${ss};border-radius:6px;padding:4px 7px;margin-bottom:4px;font-size:11px;cursor:pointer;border-left:3px solid ${color}" onclick="openPostModal(null,null,null,'${p.id}')">
+        <div style="font-weight:700">${p.time||''} ${icon} <span style="color:${color}">${PLATFORM_LABEL[p.platform]||''}</span></div>
+        ${p.caption ? `<div style="opacity:0.7;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%">${p.caption}</div>` : ''}
+      </div>`;
+    }).join('');
+
+    return `<div style="background:${isToday?'#fffbea':'white'};border:${isToday?'2px solid #f5c518':'1px solid var(--border)'};border-radius:10px;padding:10px;min-height:160px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <div>
+          <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase">${DAY_TH[dow]}</div>
+          <div style="font-size:18px;font-weight:800;color:${isToday?'var(--saffron)':'var(--text)'}">${d.getDate()}</div>
+        </div>
+        <button onclick="openPostModal('${iso}')" style="background:none;border:1px dashed var(--border);border-radius:6px;padding:2px 8px;font-size:16px;cursor:pointer;color:var(--muted);line-height:1" title="เพิ่ม post">+</button>
+      </div>
+      ${recHints}
+      ${postCards}
+    </div>`;
+  }).join('');
+}
+
+function openPostModal(date, time, platform, editId) {
+  _editingPostId = editId || null;
+  // populate campaign dropdown
+  const sel = document.getElementById('post_campaign');
+  if (sel) {
+    sel.innerHTML = '<option value="">— ไม่เชื่อมกับแคมเปญ —</option>' +
+      campaigns.filter(c=>['approved','live','pending'].includes(c.status)).map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
+  }
+  if (editId) {
+    const p = calPosts.find(x=>x.id===editId);
+    if (!p) return;
+    document.getElementById('post_date').value = p.date||'';
+    document.getElementById('post_time').value = p.time||'';
+    document.getElementById('post_platform').value = p.platform||'instagram';
+    document.getElementById('post_type').value = p.type||'sunset';
+    document.getElementById('post_caption').value = p.caption||'';
+    document.getElementById('post_campaign').value = p.campaignId||'';
+    document.getElementById('post_status').value = p.status||'planned';
+    document.getElementById('postModalTitle').textContent = '✏️ แก้ไข Post';
+    document.getElementById('postDeleteBtn').style.display = '';
+  } else {
+    document.getElementById('post_date').value = date||'';
+    document.getElementById('post_time').value = time||'';
+    document.getElementById('post_platform').value = platform||'instagram';
+    document.getElementById('post_type').value = 'sunset';
+    document.getElementById('post_caption').value = '';
+    document.getElementById('post_campaign').value = '';
+    document.getElementById('post_status').value = 'planned';
+    document.getElementById('postModalTitle').textContent = '➕ เพิ่ม Post';
+    document.getElementById('postDeleteBtn').style.display = 'none';
+  }
+  document.getElementById('postModal').style.display = 'flex';
+}
+
+function savePost() {
+  const date = document.getElementById('post_date').value;
+  if (!date) { showToast('กรุณาเลือกวันที่', 'error'); return; }
+  const post = {
+    id: _editingPostId || 'post_' + Date.now(),
+    date,
+    time: document.getElementById('post_time').value,
+    platform: document.getElementById('post_platform').value,
+    type: document.getElementById('post_type').value,
+    caption: document.getElementById('post_caption').value.trim(),
+    campaignId: document.getElementById('post_campaign').value,
+    status: document.getElementById('post_status').value,
+  };
+  if (calRef) {
+    calRef.child(post.id).set(post).then(() => {
+      showToast('✅ บันทึกแล้ว', 'success'); closeModal('postModal');
+    }).catch(e => showToast('Error: '+e.message,'error'));
+  } else {
+    const idx = calPosts.findIndex(x=>x.id===post.id);
+    if (idx>=0) calPosts[idx]=post; else calPosts.push(post);
+    showToast('✅ บันทึกแล้ว','success'); closeModal('postModal'); renderCalendar();
+  }
+}
+
+function deletePost() {
+  if (!_editingPostId) return;
+  if (!confirm('ลบ post นี้?')) return;
+  if (calRef) {
+    calRef.child(_editingPostId).remove().then(() => {
+      showToast('ลบแล้ว','error'); closeModal('postModal');
+    });
+  } else {
+    calPosts = calPosts.filter(x=>x.id!==_editingPostId);
+    showToast('ลบแล้ว','error'); closeModal('postModal'); renderCalendar();
+  }
+}
 
 // ─── TEAM TASKS ───────────────────────────────────────────────
 let _editingTaskId = null;
